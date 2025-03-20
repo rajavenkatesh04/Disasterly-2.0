@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { submitHelpRequest } from '../utils/api';
-import { AlertTriangle, Heart, MapPin, Phone, Shield, Smile, Users } from 'lucide-react';
 
 export default function GetHelpPage() {
     const [activeForm, setActiveForm] = useState(null);
@@ -12,7 +11,10 @@ export default function GetHelpPage() {
     const [responseTime, setResponseTime] = useState('24 hours');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
+
+    // Updated breathing states
     const [breathingText, setBreathingText] = useState('Inhale...');
+    const [breathingPhase, setBreathingPhase] = useState(0);
 
     // Form data states
     const [emergencyFormData, setEmergencyFormData] = useState({
@@ -31,13 +33,20 @@ export default function GetHelpPage() {
         details: ''
     });
 
-    // Breathing animation logic
+    // Improved breathing animation logic with 4-phase pattern
     useEffect(() => {
-        const interval = setInterval(() => {
-            setBreathingText((prev) => (prev === 'Inhale...' ? 'Exhale...' : 'Inhale...'));
-        }, 4000); // Sync with animation duration
-        return () => clearInterval(interval);
-    }, []);
+        const phases = ['Inhale...', 'Hold...', 'Exhale...', 'Rest...'];
+        const phaseDurations = [3000, 1000, 3000, 1000]; // in milliseconds
+
+        const updatePhase = () => {
+            setBreathingPhase(prev => (prev + 1) % phases.length);
+        };
+
+        setBreathingText(phases[breathingPhase]);
+
+        const timer = setTimeout(updatePhase, phaseDurations[breathingPhase]);
+        return () => clearTimeout(timer);
+    }, [breathingPhase]);
 
     const handleShowForm = (type) => {
         setActiveForm(type);
@@ -129,45 +138,116 @@ export default function GetHelpPage() {
     // Update progress whenever form data changes
     useEffect(() => {
         updateEmergencyProgress();
-    }, [emergencyFormData, updateEmergencyProgress]);
+    }, [emergencyFormData]);
 
     useEffect(() => {
         updateSupportProgress();
-    }, [supportFormData, updateSupportProgress]);
+    }, [supportFormData]);
 
     return (
         <div className="max-w-3xl mx-auto px-4 py-8">
             <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-blue-900 mb-2">We&apos;re Here For You</h1>
-                <p className="text-gray-600">Your safety and wellbeing come first. Let&apos;s get through this together.</p>
+                <h1 className="text-4xl font-bold text-blue-900 mb-2">We're Here For You</h1>
+                <p className="text-gray-600">Your safety and wellbeing come first. Let's get through this together.</p>
             </div>
 
             <div className="bg-blue-100 border-l-4 border-blue-500 p-4 rounded mb-6">
-                <p className="text-blue-800"><strong>You&apos;re not alone.</strong> Our team is ready to assist you 24/7. Take your time, breathe, and tell us what you need.</p>
+                <p className="text-blue-800"><strong>You're not alone.</strong> Our team is ready to assist you 24/7. Take your time, breathe, and tell us what you need.</p>
             </div>
 
+            {/* Improved breathing animation component */}
             <div className="bg-green-100 p-6 rounded-lg text-center mb-6">
                 <h2 className="text-2xl font-semibold text-green-900 mb-4">Take a moment</h2>
-                <p className="text-green-800 mb-4">Follow the circle as it expands and contracts. Breathe in as it grows, breathe out as it shrinks.</p>
-                <div className="w-24 h-24 mx-auto rounded-full bg-blue-400 relative flex items-center justify-center">
-                    <div
-                        className="absolute inset-0 rounded-full bg-blue-400 opacity-70 animate-breathe"
-                    ></div>
-                    <style jsx>{`
-                        @keyframes breathe {
-                            0%, 100% {
-                                transform: scale(1);
-                            }
-                            50% {
-                                transform: scale(1.2);
-                            }
-                        }
-                        .animate-breathe {
-                            animation: breathe 4s infinite ease-in-out;
-                        }
-                    `}</style>
+                <p className="text-green-800 mb-8">Follow the circle and breathe along. Inhale slowly as it expands, exhale gently as it contracts.</p>
+
+                {/* Breathing circle container */}
+                <div className="relative w-32 h-32 mx-auto mb-4">
+                    {/* Outer subtle pulsing circle */}
+                    <div className="absolute inset-0 rounded-full bg-blue-200 opacity-50 animate-pulse-slow"></div>
+
+                    {/* Main breathing circle */}
+                    <div className="absolute inset-0 rounded-full bg-blue-400 flex items-center justify-center animate-breathe">
+                        {/* Inner circle that fades as the main circle expands */}
+                        <div className="w-1/2 h-1/2 rounded-full bg-blue-200 animate-inner-breathe"></div>
+                    </div>
                 </div>
-                <p className="text-green-800 mt-4">{breathingText}</p>
+
+                {/* Breathing instruction text */}
+                <p className="text-green-800 text-xl font-medium animate-fade-text mt-8">{breathingText}</p>
+
+                {/* Progress indicator dots */}
+                <div className="flex justify-center mt-4 space-x-2">
+                    <div className={`h-2 w-2 rounded-full ${breathingText === 'Inhale...' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                    <div className={`h-2 w-2 rounded-full ${breathingText === 'Hold...' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                    <div className={`h-2 w-2 rounded-full ${breathingText === 'Exhale...' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                    <div className={`h-2 w-2 rounded-full ${breathingText === 'Rest...' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                </div>
+
+                {/* Custom animations */}
+                <style jsx>{`
+                    @keyframes breathe {
+                        0%, 10% {
+                            transform: scale(1);
+                            background-color: rgba(96, 165, 250, 0.9); /* blue-400 with opacity */
+                        }
+                        40%, 60% {
+                            transform: scale(1.4);
+                            background-color: rgba(147, 197, 253, 0.9); /* blue-300 with opacity */
+                        }
+                        90%, 100% {
+                            transform: scale(1);
+                            background-color: rgba(96, 165, 250, 0.9); /* back to blue-400 */
+                        }
+                    }
+                    
+                    @keyframes inner-breathe {
+                        0%, 10% {
+                            opacity: 0.8;
+                        }
+                        40%, 60% {
+                            opacity: 0.3;
+                        }
+                        90%, 100% {
+                            opacity: 0.8;
+                        }
+                    }
+                    
+                    @keyframes pulse-slow {
+                        0%, 100% {
+                            transform: scale(1);
+                            opacity: 0.3;
+                        }
+                        50% {
+                            transform: scale(1.5);
+                            opacity: 0.1;
+                        }
+                    }
+                    
+                    @keyframes fade-text {
+                        0%, 100% {
+                            opacity: 1;
+                        }
+                        20%, 80% {
+                            opacity: 0.8;
+                        }
+                    }
+                    
+                    .animate-breathe {
+                        animation: breathe 8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+                    
+                    .animate-inner-breathe {
+                        animation: inner-breathe 8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+                    
+                    .animate-pulse-slow {
+                        animation: pulse-slow 8s infinite ease-in-out;
+                    }
+                    
+                    .animate-fade-text {
+                        animation: fade-text 8s infinite ease-in-out;
+                    }
+                `}</style>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -229,13 +309,13 @@ export default function GetHelpPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-gray-700 font-medium mb-2">What&apos;s happening? (brief description):</label>
+                            <label className="block text-gray-700 font-medium mb-2">What's happening? (brief description):</label>
                             <textarea
                                 name="situation"
                                 value={emergencyFormData.situation}
                                 onChange={handleEmergencyInputChange}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Tell us what&apos;s happening in a few words..."
+                                placeholder="Tell us what's happening in a few words..."
                                 rows="4"
                             ></textarea>
                         </div>
@@ -265,7 +345,7 @@ export default function GetHelpPage() {
             {activeForm === 'support' && (
                 <div id="support-form" className="bg-white p-6 rounded-lg shadow-md mb-8">
                     <h2 className="text-2xl font-semibold text-blue-900 mb-4">Support Request</h2>
-                    <p className="text-gray-600 mb-6">Take your time filling out this form. We&apos;re here to help when you&apos;re ready.</p>
+                    <p className="text-gray-600 mb-6">Take your time filling out this form. We're here to help when you're ready.</p>
 
                     <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
                         <div
@@ -365,7 +445,7 @@ export default function GetHelpPage() {
 
             {showConfirmation && (
                 <div id="confirmation" className="bg-blue-100 p-6 rounded-lg text-center mb-8">
-                    <h2 className="text-2xl font-semibold text-blue-900 mb-4">We&apos;ve received your request</h2>
+                    <h2 className="text-2xl font-semibold text-blue-900 mb-4">We've received your request</h2>
                     <p className="text-gray-600 mb-2">Your request ID is: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{requestId}</span></p>
                     <p className="text-gray-600 mb-4">A member of our support team will be in touch with you shortly.</p>
                     <p className="text-gray-600 mb-4">Based on your urgency level, you can expect a response within:</p>
