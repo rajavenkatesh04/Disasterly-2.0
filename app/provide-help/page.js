@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Heart, MapPin, Phone, Send, Shield, Smile, Users } from 'lucide-react';
 
@@ -40,7 +40,6 @@ const ProvidePage = () => {
 
         try {
             // Simulation of API call to MongoDB
-            // In a real application, this would be an actual API endpoint
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             // Generate a request ID (this would normally come from the backend)
@@ -321,7 +320,7 @@ const ProvidePage = () => {
                                             value={formData.additionalInfo}
                                             onChange={handleChange}
                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                            placeholder="Any other details you'd like to share about how you can help..."
+                                            placeholder="Any other details you&apos;d like to share about how you can help..."
                                         />
                                     </div>
 
@@ -368,7 +367,7 @@ const ProvidePage = () => {
                                 Why Your Help Matters
                             </h3>
                             <p className="text-blue-700 mb-4">
-                                During a disaster, community support is essential. Your contribution, no matter how small, can make a significant difference in someone's life.
+                                During a disaster, community support is essential. Your contribution, no matter how small, can make a significant difference in someone&apos;s life.
                             </p>
                             <p className="text-blue-700">
                                 By offering your skills and time, you become part of the recovery process, helping communities rebuild and heal.
@@ -404,7 +403,7 @@ const ProvidePage = () => {
                         <div className="bg-green-50 rounded-lg p-6">
                             <h3 className="text-lg font-medium text-green-800 mb-2">Your Safety Matters</h3>
                             <p className="text-green-700 text-sm">
-                                While helping others, remember to prioritize your wellbeing. Only volunteer for tasks you're comfortable with and always follow safety guidelines provided by coordinators.
+                                While helping others, remember to prioritize your wellbeing. Only volunteer for tasks you&apos;re comfortable with and always follow safety guidelines provided by coordinators.
                             </p>
                         </div>
                     </div>
