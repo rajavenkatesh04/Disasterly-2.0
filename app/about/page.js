@@ -73,7 +73,7 @@ const AboutSection = () => {
                         >
                             <h2 className="text-2xl font-semibold text-indigo-800 mb-4">Our Mission</h2>
                             <p className="mb-4 text-lg leading-relaxed">
-                                Disasterly was born from a simple yet powerful idea: everyone deserves to feel safe, especially in moments of crisis. The platform provides the reassurance that help is just a tap away, no matter where people are or what emergency they're facing.
+                                Disasterly was born from a simple yet powerful idea: everyone deserves to feel safe, especially in moments of crisis. The platform provides the reassurance that help is just a tap away, no matter where people are or what emergency they&apos;re facing.
                             </p>
                             <p className="text-lg leading-relaxed">
                                 The system connects those in need with immediate assistance, critical resources, and real-time guidance during emergencies. With Disasterly, no one is ever alone in a crisis — it serves as a digital guardian, always ready to respond when someone reaches out for help.
@@ -92,7 +92,7 @@ const AboutSection = () => {
                                 Disasterly was created by Raja, a student at SRM Institute of Science and Technology in Chennai, India. The idea was born in the aftermath of the devastating Chennai floods of 2015, when Raja witnessed firsthand the chaos and communication breakdown that can occur during natural disasters.
                             </p>
                             <p className="text-lg leading-relaxed text-gray-700">
-                                What began as a college project developed out of necessity has evolved into a comprehensive emergency response platform. Raja's vision combined cutting-edge technology with compassionate design to create a system that makes disaster response faster, more efficient, and more accessible to everyone, especially in regions prone to natural calamities.
+                                What began as a college project developed out of necessity has evolved into a comprehensive emergency response platform. Raja&apos;s vision combined cutting-edge technology with compassionate design to create a system that makes disaster response faster, more efficient, and more accessible to everyone, especially in regions prone to natural calamities.
                             </p>
                         </motion.div>
 
@@ -144,7 +144,7 @@ const AboutSection = () => {
                                 Disasterly stands as a trusted companion through any emergency. From natural disasters like floods to personal crises, the platform provides not just tools, but peace of mind for communities that have historically been vulnerable to calamities.
                             </p>
                             <p className="text-sm opacity-90">
-                                "During the Chennai floods, I saw how critical information and emergency response coordination could have saved lives and reduced suffering. Disasterly exists to bridge that gap and ensure no one feels helpless in the face of disaster." — Raja, Founder
+                                &quot;During the Chennai floods, I saw how critical information and emergency response coordination could have saved lives and reduced suffering. Disasterly exists to bridge that gap and ensure no one feels helpless in the face of disaster.&quot; — Raja, Founder
                             </p>
                         </motion.div>
 
