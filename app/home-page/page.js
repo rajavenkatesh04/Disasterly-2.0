@@ -19,7 +19,7 @@ export default function HomePage() {
                     <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">Disasterly</h1>
                     <p className="text-white/90 text-sm md:text-base">
                         A Project aimed at unifying critical services to minimise loss of lives....
-                        <button type="button" onClick={() => (window.location.href = "/LandingPage")}>
+                        <button type="button" onClick={() => (window.location.href = "/about")}>
                             Learn more.
                         </button>
                     </p>

@@ -135,7 +135,7 @@ export default function GetHelpPage() {
         }
     };
 
-    // Update progress whenever form data changes
+    // Update progress whenever form data changes - Fixed useEffect dependencies
     useEffect(() => {
         updateEmergencyProgress();
     }, [emergencyFormData]);
@@ -147,12 +147,12 @@ export default function GetHelpPage() {
     return (
         <div className="max-w-3xl mx-auto px-4 py-8">
             <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-blue-900 mb-2">We're Here For You</h1>
-                <p className="text-gray-600">Your safety and wellbeing come first. Let's get through this together.</p>
+                <h1 className="text-4xl font-bold text-blue-900 mb-2">We&apos;re Here For You</h1>
+                <p className="text-gray-600">Your safety and wellbeing come first. Let&apos;s get through this together.</p>
             </div>
 
             <div className="bg-blue-100 border-l-4 border-blue-500 p-4 rounded mb-6">
-                <p className="text-blue-800"><strong>You're not alone.</strong> Our team is ready to assist you 24/7. Take your time, breathe, and tell us what you need.</p>
+                <p className="text-blue-800"><strong>You&apos;re not alone.</strong> Our team is ready to assist you 24/7. Take your time, breathe, and tell us what you need.</p>
             </div>
 
             {/* Improved breathing animation component */}
@@ -309,7 +309,7 @@ export default function GetHelpPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-gray-700 font-medium mb-2">What's happening? (brief description):</label>
+                            <label className="block text-gray-700 font-medium mb-2">What&apos;s happening? (brief description):</label>
                             <textarea
                                 name="situation"
                                 value={emergencyFormData.situation}
@@ -345,7 +345,7 @@ export default function GetHelpPage() {
             {activeForm === 'support' && (
                 <div id="support-form" className="bg-white p-6 rounded-lg shadow-md mb-8">
                     <h2 className="text-2xl font-semibold text-blue-900 mb-4">Support Request</h2>
-                    <p className="text-gray-600 mb-6">Take your time filling out this form. We're here to help when you're ready.</p>
+                    <p className="text-gray-600 mb-6">Take your time filling out this form. We&apos;re here to help when you&apos;re ready.</p>
 
                     <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
                         <div
@@ -445,7 +445,7 @@ export default function GetHelpPage() {
 
             {showConfirmation && (
                 <div id="confirmation" className="bg-blue-100 p-6 rounded-lg text-center mb-8">
-                    <h2 className="text-2xl font-semibold text-blue-900 mb-4">We've received your request</h2>
+                    <h2 className="text-2xl font-semibold text-blue-900 mb-4">We&apos;ve received your request</h2>
                     <p className="text-gray-600 mb-2">Your request ID is: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{requestId}</span></p>
                     <p className="text-gray-600 mb-4">A member of our support team will be in touch with you shortly.</p>
                     <p className="text-gray-600 mb-4">Based on your urgency level, you can expect a response within:</p>
