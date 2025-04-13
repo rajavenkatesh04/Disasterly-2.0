@@ -26,7 +26,7 @@ export default function Navbar() {
     const navLinks = [
         { href: "/volunteer", label: "Volunteer", icon: <Heart size={16} /> },
         { href: "/alerts", label: "Alerts", icon: <Bell size={16} /> },
-        { href: "/donation", label: "Donate", icon: <Heart size={16} /> },
+        { href: "/donate", label: "Donate", icon: <Heart size={16} /> },
         { href: "/resources", label: "Resources", icon: <BookOpen size={16} /> },
         { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} /> }
     ];

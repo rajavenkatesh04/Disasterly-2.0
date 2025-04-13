@@ -30,7 +30,7 @@ export default function ActionButtons() {
             gradient: "from-amber-400 to-yellow-500",
             hoverGradient: "from-amber-500 to-yellow-600",
             icon: <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />,
-            href: "/donation",
+            href: "/donate",
             description: "Financial contributions"
         },
         {

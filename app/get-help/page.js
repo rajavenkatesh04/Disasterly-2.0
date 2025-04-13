@@ -60,18 +60,6 @@ export default function GetHelpPage() {
         }, 100);
     };
 
-    const updateEmergencyProgress = () => {
-        const totalFields = Object.keys(emergencyFormData).length;
-        const filledFields = Object.values(emergencyFormData).filter(value => value.trim() !== '').length;
-        setEmergencyProgress((filledFields / totalFields) * 100);
-    };
-
-    const updateSupportProgress = () => {
-        const totalFields = Object.keys(supportFormData).length;
-        const filledFields = Object.values(supportFormData).filter(value => value.trim() !== '').length;
-        setSupportProgress((filledFields / totalFields) * 100);
-    };
-
     const handleEmergencyInputChange = (e) => {
         const { name, value } = e.target;
         setEmergencyFormData(prev => ({
@@ -87,6 +75,26 @@ export default function GetHelpPage() {
             [name]: value
         }));
     };
+
+    // Update emergency form progress
+    useEffect(() => {
+        const updateEmergencyProgress = () => {
+            const totalFields = Object.keys(emergencyFormData).length;
+            const filledFields = Object.values(emergencyFormData).filter(value => value.trim() !== '').length;
+            setEmergencyProgress((filledFields / totalFields) * 100);
+        };
+        updateEmergencyProgress();
+    }, [emergencyFormData]);
+
+    // Update support form progress
+    useEffect(() => {
+        const updateSupportProgress = () => {
+            const totalFields = Object.keys(supportFormData).length;
+            const filledFields = Object.values(supportFormData).filter(value => value.trim() !== '').length;
+            setSupportProgress((filledFields / totalFields) * 100);
+        };
+        updateSupportProgress();
+    }, [supportFormData]);
 
     const submitForm = async (type) => {
         try {
@@ -134,15 +142,6 @@ export default function GetHelpPage() {
             setIsSubmitting(false);
         }
     };
-
-    // Update progress whenever form data changes - Fixed useEffect dependencies
-    useEffect(() => {
-        updateEmergencyProgress();
-    }, [emergencyFormData]);
-
-    useEffect(() => {
-        updateSupportProgress();
-    }, [supportFormData]);
 
     return (
         <div className="max-w-3xl mx-auto px-4 py-8">
