@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Disasterly
+
+A disaster management and response coordination platform for communities and emergency services.
+
+## Overview
+
+Disasterly is an open-source platform designed to improve disaster response coordination through real-time information sharing, resource allocation, and community engagement. Our mission is to help communities prepare for, respond to, and recover from natural disasters and emergency situations.
+
+## Features
+
+- **Real-time Incident Mapping**: Visualize disaster events and affected areas on interactive maps
+- **Resource Coordination**: Match available resources with areas of need
+- **Community Alert System**: Send targeted notifications to affected populations
+- **Volunteer Management**: Organize and coordinate volunteer efforts efficiently
+- **Data Analytics**: Gain insights from historical disaster data to improve future responses
+- **Offline Functionality**: Continue operations during network outages
+- **Multi-agency Coordination**: Streamline communication between different emergency services
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v14 or newer)
+- MongoDB (v4.4 or newer)
+- Redis (optional, for enhanced performance)
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/your-username/disasterly.git
+cd disasterly
+
+# Install dependencies
+npm install
+
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your settings
+
+# Start the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Docker Deployment
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```bash
+# Build and start the containers
+docker-compose up -d
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Usage
 
-## Learn More
+After starting the application, navigate to `http://localhost:3000` in your browser. First-time users will be prompted to create an account and set up their organization profile.
 
-To learn more about Next.js, take a look at the following resources:
+For detailed instructions on using specific features, please refer to our [documentation](https://docs.disasterly.org).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Contributing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+We welcome contributions from the community! Please check out our [contributing guidelines](CONTRIBUTING.md) for more information on how to get involved.
 
-## Deploy on Vercel
+### Development Workflow
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support, please:
+- Check our [FAQ](https://docs.disasterly.org/faq)
+- Join our [community forum](https://forum.disasterly.org)
+- Report bugs via [GitHub Issues](https://github.com/your-username/disasterly/issues)
+
+## Acknowledgments
+
+- [OpenStreetMap](https://www.openstreetmap.org) for mapping data
+- All our amazing contributors and community members
+- Organizations and communities using Disasterly to make a difference
