@@ -14,7 +14,7 @@ export async function middleware(req) {
     }
 
     // Protect all routes under /panel, /dashboard, /profile, /settings
-    if (pathname.startsWith("/panel") || pathname.startsWith("/dashboard") || pathname.startsWith("/profile") || pathname.startsWith("/settings")) {
+    if (pathname.startsWith("/panel") || pathname.startsWith("/dashboard") || pathname.startsWith("/personnel") || pathname.startsWith("/settings")) {
         if (!token) {
             console.log("❌ No token, redirecting to signin...");
             const url = new URL("/signin", req.url);

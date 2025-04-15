@@ -26,37 +26,35 @@ export default function PanelPage() {
     const [volunteering, setVolunteering] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Note: Fetching data client-side with user-specific email
-    // - useSession() provides the logged-in user's email
-    // - Fetch only when session is loaded (status === 'authenticated')
+    // Fetch data client-side with user-specific userId
     useEffect(() => {
-        if (status === 'authenticated' && session?.user?.email) {
+        if (status === 'authenticated' && session?.user?.userId) {
             const fetchData = async () => {
                 setLoading(true);
                 try {
                     // Fetch emergencies for the user
-                    const emergenciesRes = await fetch(`/api/emergencies?email=${session.user.email}`);
+                    const emergenciesRes = await fetch(`/api/emergencies?userId=${session.user.userId}`);
                     if (!emergenciesRes.ok) throw new Error('Failed to fetch emergencies');
                     const emergenciesData = await emergenciesRes.json();
                     setEmergencies(emergenciesData);
 
                     // Fetch supports for the user
-                    const supportsRes = await fetch(`/api/supports?email=${session.user.email}`);
+                    const supportsRes = await fetch(`/api/supports?userId=${session.user.userId}`);
                     if (!supportsRes.ok) throw new Error('Failed to fetch supports');
                     const supportsData = await supportsRes.json();
                     setSupports(supportsData);
 
                     // Fetch donations for the user
-                    const donationsRes = await fetch(`/api/donations?email=${session.user.email}`);
+                    const donationsRes = await fetch(`/api/donations?userId=${session.user.userId}`);
                     if (!donationsRes.ok) throw new Error('Failed to fetch donations');
                     const donationsData = await donationsRes.json();
                     setDonations(donationsData);
 
-                    // Mock volunteering data (filter by email if real data added)
+                    // Mock volunteering data (filter by userId if real data added)
                     setVolunteering([
-                        { id: 'VOL1', event: 'Assam Floods Cleanup', date: '2025-03-15', hours: 4, email: session.user.email },
-                        { id: 'VOL2', event: 'Kerala Relief Camp', date: '2024-12-10', hours: 6, email: session.user.email },
-                    ].filter(v => v.email === session.user.email));
+                        { id: 'VOL1', event: 'Assam Floods Cleanup', date: '2025-03-15', hours: 4, userId: session.user.userId },
+                        { id: 'VOL2', event: 'Kerala Relief Camp', date: '2024-12-10', hours: 6, userId: session.user.userId },
+                    ].filter(v => v.userId === session.user.userId));
                 } catch (error) {
                     console.error('Error fetching data:', error);
                 } finally {
@@ -340,20 +338,24 @@ export default function PanelPage() {
                                         ) : emergencies.length === 0 ? (
                                             <tr>
                                                 <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                                                    No emergency requests found.
+                                                    You haven’t made any emergency requests yet. <br /> Need help? Click{" "}
+                                                    <Link href="/get-help" className="text-indigo-600 underline">
+                                                        here
+                                                    </Link>{" "}
+                                                    to get started!
                                                 </td>
                                             </tr>
                                         ) : (
                                             emergencies.map((item) => (
-                                                <tr key={item.receiptId}>
+                                                <tr key={item.requestId}>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.receiptId}
+                                                        {item.requestId}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {item.name}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.emergencyType}
+                                                        {item.type}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {item.status}
@@ -400,20 +402,24 @@ export default function PanelPage() {
                                         ) : supports.length === 0 ? (
                                             <tr>
                                                 <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                                                    No support requests found.
+                                                    You haven’t submitted any support requests yet. <br /> Ready to help? Click{" "}
+                                                    <Link href="/get-help" className="text-indigo-600 underline">
+                                                        here
+                                                    </Link>{" "}
+                                                    to request support!
                                                 </td>
                                             </tr>
                                         ) : (
                                             supports.map((item) => (
-                                                <tr key={item.receiptId}>
+                                                <tr key={item.requestId}>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.receiptId}
+                                                        {item.requestId}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {item.name}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.supportType}
+                                                        {item.type}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {item.status}
@@ -460,7 +466,11 @@ export default function PanelPage() {
                                         ) : donations.length === 0 ? (
                                             <tr>
                                                 <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                                                    No donations found.
+                                                    You haven’t made any donations yet. <br /> Want to contribute? Click{" "}
+                                                    <Link href="/donate" className="text-indigo-600 underline">
+                                                        here
+                                                    </Link>{" "}
+                                                    to donate now!
                                                 </td>
                                             </tr>
                                         ) : (
@@ -520,7 +530,11 @@ export default function PanelPage() {
                                         ) : volunteering.length === 0 ? (
                                             <tr>
                                                 <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                                                    No volunteering history found.
+                                                    You haven’t volunteered yet. <br /> Ready to make a difference? Check out{" "}
+                                                    <Link href="/volunteer" className="text-indigo-600 underline">
+                                                        volunteering opportunities
+                                                    </Link>{" "}
+                                                    here!
                                                 </td>
                                             </tr>
                                         ) : (

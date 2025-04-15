@@ -7,22 +7,24 @@ export async function GET(request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const email = searchParams.get('email'); // Get email from query
-
-        if (!email) {
-            return Response.json({ success: false, message: 'Email is required' }, { status: 400 });
-        }
+        const userId = searchParams.get('userId');
+        const all = searchParams.get('all') === 'true'; // Check for all flag
 
         const client = new MongoClient(process.env.MONGODB_URI);
 
         try {
             await client.connect();
             const db = client.db('disaster-relief-db');
-            const collection = db.collection('emergencies');
+            const collection = db.collection('emergency_requests');
 
-            // Note: Filter emergencies by email (assumes email field exists)
-            // If email field is missing, update schema to include it
-            const emergencies = await collection.find({ email }).toArray();
+            let emergencies;
+            if (all) {
+                emergencies = await collection.find().toArray(); // Fetch all records
+            } else if (userId) {
+                emergencies = await collection.find({ raisedBy: userId }).toArray(); // Fetch by userId
+            } else {
+                return Response.json({ success: false, message: 'User ID or all flag is required' }, { status: 400 });
+            }
 
             return Response.json(emergencies);
         } finally {
