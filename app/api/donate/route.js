@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb';
+import { getToken } from 'next-auth/jwt'; // Import getToken for JWT decoding
 
 export async function POST(request) {
     try {
@@ -7,6 +8,12 @@ export async function POST(request) {
 
         if (!process.env.MONGODB_URI) {
             throw new Error('MONGODB_URI environment variable not configured');
+        }
+
+        // Get the token from the request (assumes next-auth JWT is in cookies)
+        const token = await getToken({ req: request });
+        if (!token || !token.userId) {
+            throw new Error('Unauthorized or user ID not found in token');
         }
 
         const client = new MongoClient(process.env.MONGODB_URI);
@@ -32,6 +39,7 @@ export async function POST(request) {
                 cardNumber: cardNumber.slice(-4).padStart(16, '*'), // Store last 4 digits only
                 receiptId,
                 transactionId,
+                raisedBy: token.userId, // Use userId from token
                 status: 'completed',
                 createdAt: new Date(),
                 updatedAt: new Date(),

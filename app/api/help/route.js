@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb';
+import { getToken } from 'next-auth/jwt'; // Import getToken for JWT decoding
 
 export async function POST(request) {
     try {
@@ -7,6 +8,12 @@ export async function POST(request) {
 
         if (!process.env.MONGODB_URI) {
             throw new Error('MONGODB_URI environment variable not configured');
+        }
+
+        // Get the token from the request (assumes next-auth JWT is in cookies)
+        const token = await getToken({ req: request });
+        if (!token || !token.userId) {
+            throw new Error('Unauthorized or user ID not found in token');
         }
 
         const client = new MongoClient(process.env.MONGODB_URI);
@@ -20,14 +27,15 @@ export async function POST(request) {
 
             // Generate formatted requestId
             const result = await collection.insertOne({}); // Insert a temporary document to get an ID
-            const requestId = `EMERG-${result.insertedId.toString().slice(-8).toUpperCase()}`;
+            const requestId = `EMERGENCY-${result.insertedId.toString().slice(-8).toUpperCase()}`;
 
-            // Add timestamp, status, and requestId to document
+            // Add timestamp, status, requestId, and raisedBy to document
             const completeData = {
                 ...formData,
                 type: 'emergency',
                 status: 'pending',
-                requestId, // Save the formatted requestId
+                requestId,
+                raisedBy: token.userId, // Use userId from token
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 expectedResponseTime: new Date(Date.now() + 30 * 60 * 1000) // 30 minutes default response time
