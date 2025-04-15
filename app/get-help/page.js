@@ -368,6 +368,13 @@ export default function GetHelpPage() {
                 Refresh User Data
             </button>
 
+            {error && (
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
+                    <p className="font-bold">Error</p>
+                    <p>{error}</p>
+                </div>
+            )}
+
             {activeForm === "emergency" && (
                 <div id="emergency-form" className="bg-white p-6 rounded-lg shadow-md mb-8">
                     <h2 className="text-2xl font-semibold text-blue-900 mb-4">Emergency Assistance</h2>
@@ -565,12 +572,7 @@ export default function GetHelpPage() {
                 </div>
             )}
 
-            {error && (
-                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
-                    <p className="font-bold">Error</p>
-                    <p>{error}</p>
-                </div>
-            )}
+
 
             <div className="bg-red-100 p-6 rounded-lg">
                 <h3 className="text-xl font-semibold text-red-900 mb-4">Emergency Numbers</h3>
