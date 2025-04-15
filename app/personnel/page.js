@@ -10,16 +10,28 @@ const handleCall = (phone) => {
     window.location.href = `tel:${formatted}`;
 };
 
-// Mock update status function (replace with real API call)
-const updateStatus = async (id, newStatus) => {
-    console.log(`Updating ${id} to status: ${newStatus}`);
-    // In a real implementation, you would make an API call here
-    // await fetch(`/api/requests/${id}`, {
-    //     method: 'PATCH',
-    //     body: JSON.stringify({ status: newStatus }),
-    //     headers: { 'Content-Type': 'application/json' }
-    // });
-    return true; // Mock success
+// Real update status function with API call
+const updateStatus = async (id, newStatus, section) => {
+    const endpoint = section === 'donations'
+        ? `/api/donations`
+        : section === 'supports'
+            ? `/api/supports`
+            : `/api/emergencies`;
+    const idKey = section === 'donations' ? 'receiptId' : 'requestId';
+
+    try {
+        const response = await fetch(`${endpoint}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [idKey]: id, status: newStatus }),
+        });
+
+        if (!response.ok) throw new Error('Failed to update status');
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating status:', error);
+        throw error;
+    }
 };
 
 // Format date function
@@ -66,8 +78,8 @@ const SkeletonCard = () => (
     </div>
 );
 
-// Status badge component with dropdown
-const StatusBadge = ({ status, itemId, onStatusChange, isDonation = false }) => {
+// Status badge component with dropdown and loader
+const StatusBadge = ({ status, itemId, onStatusChange, isDonation = false, activeSection }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
 
@@ -106,10 +118,8 @@ const StatusBadge = ({ status, itemId, onStatusChange, isDonation = false }) => 
     const handleStatusUpdate = async (newStatus) => {
         setIsUpdating(true);
         try {
-            const success = await updateStatus(itemId, newStatus);
-            if (success) {
-                onStatusChange(newStatus);
-            }
+            await updateStatus(itemId, newStatus, activeSection);
+            onStatusChange(itemId, newStatus);
         } catch (error) {
             console.error('Failed to update status:', error);
         } finally {
@@ -193,7 +203,7 @@ export default function PersonnelPage() {
     const [supports, setSupports] = useState([]);
     const [donations, setDonations] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [timeUpdate, setTimeUpdate] = useState(0); // State to trigger time updates
+    const [timeUpdate, setTimeUpdate] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -219,7 +229,6 @@ export default function PersonnelPage() {
         fetchData();
     }, []);
 
-    // Set up timer for updating "time left" every 30 seconds
     useEffect(() => {
         const timer = setInterval(() => {
             setTimeUpdate(prev => prev + 1);
@@ -246,25 +255,28 @@ export default function PersonnelPage() {
         }
     };
 
-    const handleStatusChange = (id, newStatus) => {
-        // Update the status in the local state
-        const updateItemInArray = (array) => {
-            return array.map(item => {
-                if ((item.requestId || item.receiptId) === id) {
-                    return { ...item, status: newStatus };
+    const handleStatusChange = async (id, newStatus) => {
+        try {
+            await updateStatus(id, newStatus, activeSection);
+            const fetchUpdatedData = async () => {
+                const response = await fetch(`/api/${activeSection}?all=true`);
+                if (response.ok) {
+                    const updatedData = await response.json();
+                    switch (activeSection) {
+                        case 'emergencies': setEmergencies(updatedData); break;
+                        case 'supports': setSupports(updatedData); break;
+                        case 'donations': setDonations(updatedData); break;
+                    }
                 }
-                return item;
-            });
-        };
-
-        setEmergencies(updateItemInArray(emergencies));
-        setSupports(updateItemInArray(supports));
-        setDonations(updateItemInArray(donations));
+            };
+            await fetchUpdatedData();
+        } catch (error) {
+            console.error('Failed to update status and refresh:', error);
+        }
     };
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-800 flex flex-col md:flex-row">
-            {/* Overlay for mobile */}
             {isSidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
@@ -272,7 +284,6 @@ export default function PersonnelPage() {
                 ></div>
             )}
 
-            {/* Sidebar */}
             <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg transform ${
                 isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
             } md:translate-x-0 md:static md:w-64 transition-transform duration-300 ease-in-out flex flex-col`}>
@@ -347,7 +358,6 @@ export default function PersonnelPage() {
                     </nav>
                 </div>
 
-                {/* Profile section */}
                 <div className="border-t border-gray-200 p-4">
                     <div className="flex items-center">
                         <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
@@ -361,12 +371,9 @@ export default function PersonnelPage() {
                 </div>
             </aside>
 
-            {/* Main Content */}
             <main className="flex-1 p-4 md:p-8">
-                {/* Top Bar */}
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
-                        {/* Mobile Menu Toggle */}
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                             className="md:hidden mr-4 text-gray-600 hover:text-gray-900"
@@ -375,7 +382,6 @@ export default function PersonnelPage() {
                             <Menu className="w-6 h-6" />
                         </button>
 
-                        {/* Title and section indicator - REMOVED ARROW IN MOBILE VIEW */}
                         <div>
                             <div className="flex items-center">
                                 <Link href="/" className="hidden md:inline-flex items-center text-gray-600 hover:text-gray-900 mr-3">
@@ -391,7 +397,6 @@ export default function PersonnelPage() {
                         </div>
                     </div>
 
-                    {/* Top right stats/filter (optional) */}
                     <div className="hidden md:flex items-center space-x-2">
                         <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
                             Active: {getDataForSection().filter(item => item.status?.toLowerCase() === 'in progress').length}
@@ -402,7 +407,6 @@ export default function PersonnelPage() {
                     </div>
                 </div>
 
-                {/* Section icon header */}
                 <div className="mb-6 flex justify-center md:justify-start">
                     <div className={`inline-flex items-center px-4 py-2 rounded-full ${
                         activeSection === 'emergencies' ? 'bg-red-50 text-red-700' :
@@ -416,7 +420,6 @@ export default function PersonnelPage() {
                     </div>
                 </div>
 
-                {/* Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {loading ? (
                         Array(6).fill().map((_, i) => <SkeletonCard key={i} />)
@@ -436,13 +439,11 @@ export default function PersonnelPage() {
                             const status = item.status?.toLowerCase() || 'pending';
                             const isDonation = activeSection === 'donations';
 
-                            // Calculate time remaining (if expectedResponseTime exists)
                             let timeRemaining = null;
                             if (item.expectedResponseTime) {
                                 timeRemaining = getTimeRemaining(item.expectedResponseTime);
                             }
 
-                            // Determine border color based on status
                             let borderColor = '';
                             switch (status) {
                                 case 'pending':
@@ -467,7 +468,6 @@ export default function PersonnelPage() {
                                      className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${borderColor}`}
                                 >
                                     <div className="p-5">
-                                        {/* Header */}
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
                                                 <h3 className="font-semibold text-gray-900">{requestId}</h3>
@@ -478,12 +478,12 @@ export default function PersonnelPage() {
                                             <StatusBadge
                                                 status={item.status}
                                                 itemId={requestId}
-                                                onStatusChange={(newStatus) => handleStatusChange(requestId, newStatus)}
+                                                onStatusChange={handleStatusChange}
                                                 isDonation={isDonation}
+                                                activeSection={activeSection} // Pass activeSection as prop
                                             />
                                         </div>
 
-                                        {/* Details */}
                                         <div className="mb-4 space-y-2 text-sm">
                                             {item.type && (
                                                 <div className="flex items-start">
@@ -515,7 +515,6 @@ export default function PersonnelPage() {
                                                 </div>
                                             )}
 
-                                            {/* Timestamp info */}
                                             <div className="flex flex-col space-y-1 mt-2 mb-1">
                                                 {item.createdAt && (
                                                     <div className="flex items-center text-gray-600">
@@ -537,7 +536,6 @@ export default function PersonnelPage() {
                                                     </div>
                                                 )}
 
-                                                {/* Time remaining indicator */}
                                                 {timeRemaining && (
                                                     <div className="flex items-center mt-1">
                                                         <span className="font-medium text-gray-700 w-24">Time Left:</span>
@@ -572,10 +570,8 @@ export default function PersonnelPage() {
                                             )}
                                         </div>
 
-                                        {/* Divider */}
                                         <div className="h-px bg-gray-100 my-4"></div>
 
-                                        {/* Contact Info */}
                                         <div className="text-sm">
                                             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
                                                 <div className="mb-2 sm:mb-0">
@@ -598,7 +594,6 @@ export default function PersonnelPage() {
                                         </div>
                                     </div>
 
-                                    {/* Action Button */}
                                     <div className="px-5 py-3 bg-gray-50 flex justify-between items-center">
                                         <div className="flex items-center text-xs">
                                             <span className={`flex items-center ${
