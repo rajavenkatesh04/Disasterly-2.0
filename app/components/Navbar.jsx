@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react";
-import { Menu, X, Home, Bell, Heart, BookOpen, LayoutDashboard } from "lucide-react";
+import { Menu, X, Home, Bell, Heart, BookOpen, LayoutDashboard, CircleUserRound} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import LoginButton from "@/app/components/ui/LoginButton";
 
@@ -28,7 +28,8 @@ export default function Navbar() {
         { href: "/alerts", label: "Alerts", icon: <Bell size={16} /> },
         { href: "/donate", label: "Donate", icon: <Heart size={16} /> },
         { href: "/resources", label: "Resources", icon: <BookOpen size={16} /> },
-        { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} /> }
+        { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
+        { href: "/panel", label: "Profile", icon: <CircleUserRound  size={16} /> }
     ];
 
     return (

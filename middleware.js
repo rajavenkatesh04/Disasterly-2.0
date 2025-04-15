@@ -31,5 +31,5 @@ export async function middleware(req) {
 
 // Protect these routes
 export const config = {
-    matcher: ["/dashboard", "/profile", "/settings"], // Add more protected routes here
+    matcher: ["/dashboard", "/panel", "/settings"], // Add more protected routes here
 };

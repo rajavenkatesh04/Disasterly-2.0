@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { submitHelpRequest } from '../utils/api';
 
 export default function GetHelpPage() {
     const [activeForm, setActiveForm] = useState(null);
@@ -8,11 +7,12 @@ export default function GetHelpPage() {
     const [supportProgress, setSupportProgress] = useState(0);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [requestId, setRequestId] = useState('');
+    const [mongoId, setMongoId] = useState('');
     const [responseTime, setResponseTime] = useState('24 hours');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
 
-    // Updated breathing states
+    // Breathing states
     const [breathingText, setBreathingText] = useState('Inhale...');
     const [breathingPhase, setBreathingPhase] = useState(0);
 
@@ -33,7 +33,7 @@ export default function GetHelpPage() {
         details: ''
     });
 
-    // Improved breathing animation logic with 4-phase pattern
+    // Breathing animation logic
     useEffect(() => {
         const phases = ['Inhale...', 'Hold...', 'Exhale...', 'Rest...'];
         const phaseDurations = [3000, 1000, 3000, 1000]; // in milliseconds
@@ -53,7 +53,7 @@ export default function GetHelpPage() {
         setShowConfirmation(false);
         setError(null);
 
-        // Scroll to the form with a slight delay to ensure rendering
+        // Scroll to the form
         setTimeout(() => {
             const element = document.getElementById(`${type}-form`);
             element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -101,29 +101,60 @@ export default function GetHelpPage() {
             setIsSubmitting(true);
             setError(null);
 
-            // Prepare form data based on type
-            const formData = type === 'emergency' ?
-                { type, ...emergencyFormData } :
-                { type, ...supportFormData };
+            // Determine API endpoint and form data based on type
+            const endpoint = type === 'emergency' ? '/api/help' : '/api/support';
+            const formData = type === 'emergency' ? emergencyFormData : supportFormData;
 
             // Submit to backend API
-            const response = await submitHelpRequest(formData);
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to submit request');
+            }
 
             // Set response data
-            setRequestId(response.requestId);
+            setRequestId(data.requestId);
+            setMongoId(data.mongoId);
 
-            // Calculate human-readable response time from API response
-            const expectedTime = new Date(response.expectedResponseTime);
+            // Calculate human-readable response time
+            const expectedTime = new Date(data.expectedResponseTime);
             const now = new Date();
             const diffMs = expectedTime - now;
             const diffMins = Math.round(diffMs / 60000);
 
             if (diffMins < 60) {
                 setResponseTime(`${diffMins} minutes`);
-            } else if (diffMins < 1440) { // Less than 24 hours
+            } else if (diffMins < 1440) {
                 setResponseTime(`${Math.round(diffMins / 60)} hours`);
             } else {
                 setResponseTime(`${Math.round(diffMins / 1440)} days`);
+            }
+
+            // Reset form
+            if (type === 'emergency') {
+                setEmergencyFormData({
+                    name: '',
+                    location: '',
+                    situation: '',
+                    contact: ''
+                });
+            } else {
+                setSupportFormData({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    helpType: '',
+                    urgency: '',
+                    details: ''
+                });
             }
 
             // Show confirmation
@@ -135,6 +166,7 @@ export default function GetHelpPage() {
                 const element = document.getElementById('confirmation');
                 element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 100);
+
         } catch (err) {
             console.error('Error submitting form:', err);
             setError(err.message || 'An unexpected error occurred. Please try again.');
@@ -154,27 +186,20 @@ export default function GetHelpPage() {
                 <p className="text-blue-800"><strong>You&apos;re not alone.</strong> Our team is ready to assist you 24/7. Take your time, breathe, and tell us what you need.</p>
             </div>
 
-            {/* Improved breathing animation component */}
+            {/* Breathing animation component */}
             <div className="bg-green-100 p-6 rounded-lg text-center mb-6">
                 <h2 className="text-2xl font-semibold text-green-900 mb-4">Take a moment</h2>
                 <p className="text-green-800 mb-8">Follow the circle and breathe along. Inhale slowly as it expands, exhale gently as it contracts.</p>
 
-                {/* Breathing circle container */}
                 <div className="relative w-32 h-32 mx-auto mb-4">
-                    {/* Outer subtle pulsing circle */}
                     <div className="absolute inset-0 rounded-full bg-blue-200 opacity-50 animate-pulse-slow"></div>
-
-                    {/* Main breathing circle */}
                     <div className="absolute inset-0 rounded-full bg-blue-400 flex items-center justify-center animate-breathe">
-                        {/* Inner circle that fades as the main circle expands */}
                         <div className="w-1/2 h-1/2 rounded-full bg-blue-200 animate-inner-breathe"></div>
                     </div>
                 </div>
 
-                {/* Breathing instruction text */}
                 <p className="text-green-800 text-xl font-medium animate-fade-text mt-8">{breathingText}</p>
 
-                {/* Progress indicator dots */}
                 <div className="flex justify-center mt-4 space-x-2">
                     <div className={`h-2 w-2 rounded-full ${breathingText === 'Inhale...' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
                     <div className={`h-2 w-2 rounded-full ${breathingText === 'Hold...' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
@@ -182,20 +207,19 @@ export default function GetHelpPage() {
                     <div className={`h-2 w-2 rounded-full ${breathingText === 'Rest...' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
                 </div>
 
-                {/* Custom animations */}
                 <style jsx>{`
                     @keyframes breathe {
                         0%, 10% {
                             transform: scale(1);
-                            background-color: rgba(96, 165, 250, 0.9); /* blue-400 with opacity */
+                            background-color: rgba(96, 165, 250, 0.9);
                         }
                         40%, 60% {
                             transform: scale(1.4);
-                            background-color: rgba(147, 197, 253, 0.9); /* blue-300 with opacity */
+                            background-color: rgba(147, 197, 253, 0.9);
                         }
                         90%, 100% {
                             transform: scale(1);
-                            background-color: rgba(96, 165, 250, 0.9); /* back to blue-400 */
+                            background-color: rgba(96, 165, 250, 0.9);
                         }
                     }
                     
@@ -314,7 +338,7 @@ export default function GetHelpPage() {
                                 value={emergencyFormData.situation}
                                 onChange={handleEmergencyInputChange}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Tell us what's happening in a few words..."
+                                placeholder="Tell us what&apos;s happening in a few words..."
                                 rows="4"
                             ></textarea>
                         </div>
@@ -445,15 +469,26 @@ export default function GetHelpPage() {
             {showConfirmation && (
                 <div id="confirmation" className="bg-blue-100 p-6 rounded-lg text-center mb-8">
                     <h2 className="text-2xl font-semibold text-blue-900 mb-4">We&apos;ve received your request</h2>
-                    <p className="text-gray-600 mb-2">Your request ID is: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{requestId}</span></p>
+                    <p className="text-gray-600 mb-2">
+                        Your request ID is: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{requestId}</span>
+                    </p>
+                    <p className="text-gray-600 mb-4">
+                        Reference ID: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{mongoId}</span>
+                    </p>
+                    <p className="text-gray-600 mb-4 text-sm italic">
+                        Please screenshot or note down these IDs for future reference.
+                    </p>
                     <p className="text-gray-600 mb-4">A member of our support team will be in touch with you shortly.</p>
                     <p className="text-gray-600 mb-4">Based on your urgency level, you can expect a response within:</p>
                     <p className="text-2xl font-bold text-blue-900 mb-6">{responseTime}</p>
                     <button
-                        onClick={() => window.location.reload()}
+                        onClick={() => {
+                            setShowConfirmation(false);
+                            setActiveForm(null);
+                        }}
                         className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
                     >
-                        Return to Help Page
+                        Submit Another Request
                     </button>
                 </div>
             )}
