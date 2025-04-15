@@ -1,7 +1,10 @@
 "use client";
+
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, ArrowLeft, Heart, MapPin, Phone, Send, Shield, Smile, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSession } from "next-auth/react";
+import axios from "axios";
 
 const ProvidePage = () => {
     // State for form data
@@ -27,6 +30,49 @@ const ProvidePage = () => {
 
     // State for animation
     const [isFormVisible, setIsFormVisible] = useState(false);
+
+    const { data: session, status } = useSession();
+
+    // Fetch user data on session load
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (status === "authenticated" && session?.user?.userId) {
+                try {
+                    const response = await axios.get(`/api/user/${session.user.userId}`, {
+                        headers: { "Cache-Control": "no-cache" },
+                    });
+                    const userData = response.data.user;
+                    if (userData) {
+                        const address = userData.address || {};
+                        const locationParts = [
+                            address.street,
+                            address.city,
+                            address.state,
+                            address.postalCode,
+                            address.country
+                        ].filter(part => part); // Filter out null/undefined/empty values
+                        const location = locationParts.join(', ').trim() || '';
+                        setFormData((prev) => ({
+                            ...prev,
+                            firstName: userData.name.split(' ')[0] || "",
+                            lastName: userData.name.split(' ')[1] || "",
+                            email: userData.email || "",
+                            phone: userData.phone || "",
+                            location: location,
+                        }));
+                    } else {
+                        setError("No user data returned from server.");
+                    }
+                } catch (err) {
+                    console.error("Error fetching user data:", err.response?.data || err.message);
+                    setError("Failed to load your profile data. Check console for details.");
+                }
+            } else if (status === "unauthenticated") {
+                setError("Please sign in to pre-populate your details.");
+            }
+        };
+        fetchUserData();
+    }, [status, session]);
 
     // Handle input changes
     const handleChange = (e) => {
@@ -325,7 +371,7 @@ const ProvidePage = () => {
                                                 value={formData.location}
                                                 onChange={handleChange}
                                                 className="flex-1 block w-full px-4 py-3 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-                                                placeholder="City, State"
+                                                placeholder="Street, City, State, Postal Code, Country"
                                             />
                                             <motion.button
                                                 whileHover={{ scale: 1.05 }}

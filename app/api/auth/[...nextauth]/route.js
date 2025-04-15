@@ -46,8 +46,9 @@ export const authOptions = {
                 const dbUser = await User.findOne({ email: user.email });
                 if (dbUser) {
                     token.isProfileComplete = dbUser.isProfileComplete;
-                    token.userId = dbUser._id.toString();
+                    token.userId = dbUser.userId || dbUser._id.toString(); // Use userId if exists, fallback to _id
                     token.name = dbUser.name;
+                    token.email = dbUser.email; // Ensure email is in token
                     token.image = dbUser.image;
                 }
             }
@@ -57,8 +58,9 @@ export const authOptions = {
             if (session.user) {
                 console.log("Session callback for:", session.user.email);
                 session.user.isProfileComplete = token.isProfileComplete;
-                session.user.id = token.userId;
+                session.user.userId = token.userId; // Use userId instead of id
                 session.user.name = token.name;
+                session.user.email = token.email; // Ensure email is in session
                 session.user.image = token.image;
             }
             return session;
