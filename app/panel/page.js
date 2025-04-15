@@ -5,21 +5,22 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import { AlertCircle, HeartHandshake, Gift, ArrowLeft, Menu, User, Home } from 'lucide-react';
 
-// Component for skeleton loader rows
-const SkeletonRow = () => (
-    <tr>
-        <td className="px-6 py-4"><Skeleton width={100} /></td>
-        <td className="px-6 py-4"><Skeleton width={150} /></td>
-        <td className="px-6 py-4"><Skeleton width={120} /></td>
-        <td className="px-6 py-4"><Skeleton width={80} /></td>
-    </tr>
+// Component for skeleton loader cards
+const SkeletonCard = () => (
+    <div className="bg-white rounded-xl shadow-sm p-6 mb-4 w-full">
+        <div className="h-5 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+        <div className="h-20 bg-gray-100 rounded mb-4"></div>
+        <div className="h-10 bg-gray-200 rounded"></div>
+    </div>
 );
 
 export default function PanelPage() {
     const { data: session, status } = useSession();
     const [activeSection, setActiveSection] = useState('emergencies');
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [emergencies, setEmergencies] = useState([]);
     const [supports, setSupports] = useState([]);
     const [donations, setDonations] = useState([]);
@@ -65,504 +66,449 @@ export default function PanelPage() {
         }
     }, [session, status]);
 
-    const toggleMenu = () => {
-        setIsMenuOpen(!isMenuOpen);
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen);
+    };
+
+    const getStatusColor = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'pending':
+                return 'bg-amber-500';
+            case 'in progress':
+                return 'bg-blue-500';
+            case 'completed':
+                return 'bg-green-500';
+            case 'urgent':
+            case 'critical':
+                return 'bg-red-500';
+            default:
+                return 'bg-gray-400';
+        }
+    };
+
+    const getBorderColor = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'pending':
+                return 'border-amber-500';
+            case 'in progress':
+                return 'border-blue-500';
+            case 'completed':
+                return 'border-green-500';
+            case 'urgent':
+            case 'critical':
+                return 'border-red-500';
+            default:
+                return 'border-gray-400';
+        }
+    };
+
+    const getStatusTextColor = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'pending':
+                return 'text-amber-800';
+            case 'in progress':
+                return 'text-blue-800';
+            case 'completed':
+                return 'text-green-800';
+            case 'urgent':
+            case 'critical':
+                return 'text-red-800';
+            default:
+                return 'text-gray-800';
+        }
+    };
+
+    const getIconForSection = (section) => {
+        switch (section) {
+            case 'emergencies': return <AlertCircle className="w-5 h-5" />;
+            case 'supports': return <HeartHandshake className="w-5 h-5" />;
+            case 'donations': return <Gift className="w-5 h-5" />;
+            case 'volunteering': return <User className="w-5 h-5" />;
+            default: return null;
+        }
+    };
+
+    const getDataForSection = () => {
+        switch (activeSection) {
+            case 'emergencies': return emergencies;
+            case 'supports': return supports;
+            case 'donations': return donations;
+            case 'volunteering': return volunteering;
+            default: return [];
+        }
+    };
+
+    // Format date function
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        }).format(date);
     };
 
     if (status === 'loading') return <div className="p-6"><Skeleton height={400} /></div>;
     if (status === 'unauthenticated') return <div className="p-6 text-center text-gray-600">Please log in to view your panel.</div>;
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="flex">
-                {/* Sidebar (Desktop) */}
-                <aside className="hidden md:block w-64 bg-white shadow-lg h-screen fixed">
-                    <div className="p-6">
-                        <h2 className="text-2xl font-bold text-indigo-900 mb-8">Profile</h2>
-                        <nav>
-                            <ul className="space-y-2">
-                                <li>
-                                    <button
-                                        onClick={() => setActiveSection('emergencies')}
-                                        className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-2 ${
-                                            activeSection === 'emergencies'
-                                                ? 'bg-indigo-100 text-indigo-900'
-                                                : 'text-gray-600 hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path
-                                                fillRule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-.464 5.535a1 1 0 10-1.415-1.414 3 3 0 01-4.242 0 1 1 0 00-1.415 1.414 5 5 0 007.072 0z"
-                                                clipRule="evenodd"
-                                            />
-                                        </svg>
-                                        <span>Emergency Requests ({emergencies.length})</span>
-                                    </button>
-                                </li>
-                                <li>
-                                    <button
-                                        onClick={() => setActiveSection('supports')}
-                                        className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-2 ${
-                                            activeSection === 'supports'
-                                                ? 'bg-indigo-100 text-indigo-900'
-                                                : 'text-gray-600 hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                                        </svg>
-                                        <span>Support Requests ({supports.length})</span>
-                                    </button>
-                                </li>
-                                <li>
-                                    <button
-                                        onClick={() => setActiveSection('donations')}
-                                        className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-2 ${
-                                            activeSection === 'donations'
-                                                ? 'bg-indigo-100 text-indigo-900'
-                                                : 'text-gray-600 hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                                            <path
-                                                fillRule="evenodd"
-                                                d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
-                                                clipRule="evenodd"
-                                            />
-                                        </svg>
-                                        <span>Donations Made ({donations.length})</span>
-                                    </button>
-                                </li>
-                                <li>
-                                    <button
-                                        onClick={() => setActiveSection('volunteering')}
-                                        className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-2 ${
-                                            activeSection === 'volunteering'
-                                                ? 'bg-indigo-100 text-indigo-900'
-                                                : 'text-gray-600 hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                                        </svg>
-                                        <span>Volunteering History ({volunteering.length})</span>
-                                    </button>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
-                </aside>
+        <div className="min-h-screen bg-gray-50 text-gray-800 flex flex-col md:flex-row">
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
 
-                {/* Main Content */}
-                <main className="flex-1 md:ml-64 p-6">
-                    {/* Back Button */}
-                    <div className="mb-6">
-                        <Link
-                            href="/"
-                            className="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-medium"
-                        >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M15 19l-7-7 7-7"
-                                />
-                            </svg>
-                            Back to Home
-                        </Link>
-                    </div>
+            {/* Sidebar */}
+            <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg transform ${
+                isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            } md:translate-x-0 md:static md:w-64 transition-transform duration-300 ease-in-out flex flex-col`}>
+                <div className="p-6 flex-1">
+                    <Link href="/" className="flex items-center space-x-2 mb-8">
+                        <div className="h-8 w-8 rounded-md bg-indigo-600 flex items-center justify-center">
+                            <span className="text-white font-bold">U</span>
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-900">User Profile</h2>
+                    </Link>
 
-                    {/* Hamburger Menu (Mobile) */}
-                    <div className="md:hidden mb-6">
-                        <button
-                            onClick={toggleMenu}
-                            className="p-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M4 6h16M4 12h16M4 18h16"
-                                />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {/* Mobile Menu */}
-                    <div
-                        className={`fixed inset-0 bg-white z-50 ${
-                            isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-                        } transition-transform duration-300 ease-in-out md:hidden`}
-                    >
-                        <div className="p-6">
-                            <div className="flex justify-between items-center mb-8">
-                                <h2 className="text-2xl font-bold text-indigo-900">Admin Panel</h2>
+                    <nav>
+                        <div className="mb-2 text-xs font-semibold uppercase text-gray-500 tracking-wider pl-3">
+                            My Activities
+                        </div>
+                        <ul className="space-y-1">
+                            <li>
                                 <button
-                                    onClick={toggleMenu}
-                                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"
+                                    onClick={() => setActiveSection('emergencies')}
+                                    className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
+                                        activeSection === 'emergencies'
+                                            ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                            : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
                                 >
-                                    <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M6 18L18 6M6 6l12 12"
-                                        />
-                                    </svg>
+                                    <AlertCircle className={`w-5 h-5 ${activeSection === 'emergencies' ? 'text-indigo-500' : 'text-gray-500'}`} />
+                                    <span>Emergency Requests</span>
+                                    {emergencies.length > 0 && (
+                                        <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
+                                            {emergencies.length}
+                                        </span>
+                                    )}
                                 </button>
+                            </li>
+                            <li>
+                                <button
+                                    onClick={() => setActiveSection('supports')}
+                                    className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
+                                        activeSection === 'supports'
+                                            ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                            : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <HeartHandshake className={`w-5 h-5 ${activeSection === 'supports' ? 'text-indigo-500' : 'text-gray-500'}`} />
+                                    <span>Support Requests</span>
+                                    {supports.length > 0 && (
+                                        <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
+                                            {supports.length}
+                                        </span>
+                                    )}
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    onClick={() => setActiveSection('donations')}
+                                    className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
+                                        activeSection === 'donations'
+                                            ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                            : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <Gift className={`w-5 h-5 ${activeSection === 'donations' ? 'text-indigo-500' : 'text-gray-500'}`} />
+                                    <span>Donations Made</span>
+                                    {donations.length > 0 && (
+                                        <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
+                                            {donations.length}
+                                        </span>
+                                    )}
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    onClick={() => setActiveSection('volunteering')}
+                                    className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
+                                        activeSection === 'volunteering'
+                                            ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                            : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <User className={`w-5 h-5 ${activeSection === 'volunteering' ? 'text-indigo-500' : 'text-gray-500'}`} />
+                                    <span>Volunteering History</span>
+                                    {volunteering.length > 0 && (
+                                        <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
+                                            {volunteering.length}
+                                        </span>
+                                    )}
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+
+                <div className="border-t border-gray-200 p-4">
+                    <div className="flex items-center">
+                        <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium">
+                            {session?.user?.name?.charAt(0) || 'U'}
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900">{session?.user?.name || 'User'}</p>
+                            <p className="text-xs text-gray-500">{session?.user?.email || 'user@example.com'}</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 p-4 md:p-8">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center">
+                        <button
+                            onClick={toggleSidebar}
+                            className="md:hidden mr-4 text-gray-600 hover:text-gray-900"
+                            aria-label="Toggle sidebar"
+                        >
+                            <Menu className="w-6 h-6" />
+                        </button>
+
+                        <div>
+                            <div className="flex items-center">
+                                <Link href="/" className="hidden md:inline-flex items-center text-gray-600 hover:text-gray-900 mr-3">
+                                    <ArrowLeft className="w-4 h-4" />
+                                </Link>
+                                <h1 className="text-2xl font-bold text-gray-900">
+                                    {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}
+                                </h1>
                             </div>
-                            <nav>
-                                <ul className="space-y-4">
-                                    <li>
-                                        <button
-                                            onClick={() => {
-                                                setActiveSection('emergencies');
-                                                setIsMenuOpen(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-2 ${
-                                                activeSection === 'emergencies'
-                                                    ? 'bg-indigo-100 text-indigo-900'
-                                                    : 'text-gray-600 hover:bg-gray-100'
-                                            }`}
-                                        >
-                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                <path
-                                                    fillRule="evenodd"
-                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-.464 5.535a1 1 0 10-1.415-1.414 3 3 0 01-4.242 0 1 1 0 00-1.415 1.414 5 5 0 007.072 0z"
-                                                    clipRule="evenodd"
-                                                />
-                                            </svg>
-                                            <span>Emergency Requests ({emergencies.length})</span>
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button
-                                            onClick={() => {
-                                                setActiveSection('supports');
-                                                setIsMenuOpen(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-2 ${
-                                                activeSection === 'supports'
-                                                    ? 'bg-indigo-100 text-indigo-900'
-                                                    : 'text-gray-600 hover:bg-gray-100'
-                                            }`}
-                                        >
-                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                                            </svg>
-                                            <span>Support Requests ({supports.length})</span>
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button
-                                            onClick={() => {
-                                                setActiveSection('donations');
-                                                setIsMenuOpen(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-2 ${
-                                                activeSection === 'donations'
-                                                    ? 'bg-indigo-100 text-indigo-900'
-                                                    : 'text-gray-600 hover:bg-gray-100'
-                                            }`}
-                                        >
-                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                                                <path
-                                                    fillRule="evenodd"
-                                                    d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
-                                                    clipRule="evenodd"
-                                                />
-                                            </svg>
-                                            <span>Donations Made ({donations.length})</span>
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button
-                                            onClick={() => {
-                                                setActiveSection('volunteering');
-                                                setIsMenuOpen(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-2 ${
-                                                activeSection === 'volunteering'
-                                                    ? 'bg-indigo-100 text-indigo-900'
-                                                    : 'text-gray-600 hover:bg-gray-100'
-                                            }`}
-                                        >
-                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                                            </svg>
-                                            <span>Volunteering History ({volunteering.length})</span>
-                                        </button>
-                                    </li>
-                                </ul>
-                            </nav>
+                            <p className="text-sm text-gray-500 mt-1">
+                                View your {activeSection} history and status
+                            </p>
                         </div>
                     </div>
 
-                    {/* Content Sections */}
-                    <div className="bg-white rounded-2xl shadow-lg p-6">
-                        {activeSection === 'emergencies' && (
-                            <div>
-                                <h3 className="text-xl font-semibold text-indigo-900 mb-4">
-                                    Emergency Requests
-                                </h3>
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                ID
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Name
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Type
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                        {loading ? (
-                                            <>
-                                                <SkeletonRow />
-                                                <SkeletonRow />
-                                                <SkeletonRow />
-                                            </>
-                                        ) : emergencies.length === 0 ? (
-                                            <tr>
-                                                <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                                                    You haven’t made any emergency requests yet. <br /> Need help? Click{" "}
-                                                    <Link href="/get-help" className="text-indigo-600 underline">
-                                                        here
-                                                    </Link>{" "}
-                                                    to get started!
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            emergencies.map((item) => (
-                                                <tr key={item.requestId}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.requestId}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.name}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.type}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.status}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeSection === 'supports' && (
-                            <div>
-                                <h3 className="text-xl font-semibold text-indigo-900 mb-4">
-                                    Support Requests
-                                </h3>
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                ID
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Name
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Type
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                        {loading ? (
-                                            <>
-                                                <SkeletonRow />
-                                                <SkeletonRow />
-                                                <SkeletonRow />
-                                            </>
-                                        ) : supports.length === 0 ? (
-                                            <tr>
-                                                <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                                                    You haven’t submitted any support requests yet. <br /> Ready to help? Click{" "}
-                                                    <Link href="/get-help" className="text-indigo-600 underline">
-                                                        here
-                                                    </Link>{" "}
-                                                    to request support!
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            supports.map((item) => (
-                                                <tr key={item.requestId}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.requestId}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.name}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.type}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.status}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeSection === 'donations' && (
-                            <div>
-                                <h3 className="text-xl font-semibold text-indigo-900 mb-4">
-                                    Donations Made
-                                </h3>
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Receipt ID
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Name
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Disaster
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Amount
-                                            </th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                        {loading ? (
-                                            <>
-                                                <SkeletonRow />
-                                                <SkeletonRow />
-                                                <SkeletonRow />
-                                            </>
-                                        ) : donations.length === 0 ? (
-                                            <tr>
-                                                <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                                                    You haven’t made any donations yet. <br /> Want to contribute? Click{" "}
-                                                    <Link href="/donate" className="text-indigo-600 underline">
-                                                        here
-                                                    </Link>{" "}
-                                                    to donate now!
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            donations.map((item) => (
-                                                <tr key={item.receiptId}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.receiptId}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.name}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.disaster}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        ₹{item.amount}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeSection === 'volunteering' && (
-                            <div>
-                                <h3 className="text-xl font-semibold text-indigo-900 mb-4">
-                                    Volunteering History
-                                </h3>
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                ID
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Event
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Date
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Hours
-                                            </th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                        {loading ? (
-                                            <>
-                                                <SkeletonRow />
-                                                <SkeletonRow />
-                                                <SkeletonRow />
-                                            </>
-                                        ) : volunteering.length === 0 ? (
-                                            <tr>
-                                                <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                                                    You haven’t volunteered yet. <br /> Ready to make a difference? Check out{" "}
-                                                    <Link href="/volunteer" className="text-indigo-600 underline">
-                                                        volunteering opportunities
-                                                    </Link>{" "}
-                                                    here!
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            volunteering.map((item) => (
-                                                <tr key={item.id}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.id}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.event}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.date}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {item.hours}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
+                    <div className="hidden md:flex items-center space-x-2">
+                        <Link href="/" className="flex items-center bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
+                            <Home className="w-4 h-4 mr-2" />
+                            Home
+                        </Link>
                     </div>
-                </main>
-            </div>
+                </div>
+
+                <div className="mb-6 flex justify-center md:justify-start">
+                    <div className={`inline-flex items-center px-4 py-2 rounded-full ${
+                        activeSection === 'emergencies' ? 'bg-red-50 text-red-700' :
+                            activeSection === 'supports' ? 'bg-blue-50 text-blue-700' :
+                                activeSection === 'donations' ? 'bg-purple-50 text-purple-700' :
+                                    'bg-indigo-50 text-indigo-700'
+                    }`}>
+                        {getIconForSection(activeSection)}
+                        <span className="ml-2 font-medium">
+                            {getDataForSection().length} {activeSection} {getDataForSection().length === 1 ? 'item' : 'items'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Content Display - Now with Wider Cards */}
+                <div className="space-y-6">
+                    {loading ? (
+                        Array(3).fill().map((_, i) => <SkeletonCard key={i} />)
+                    ) : getDataForSection().length === 0 ? (
+                        <div className="flex flex-col items-center justify-center text-gray-500 py-16 bg-white rounded-xl shadow-sm">
+                            <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                {getIconForSection(activeSection)}
+                            </div>
+                            <p className="text-lg font-medium">No {activeSection} to display</p>
+                            <p className="text-sm mt-2">
+                                {activeSection === 'emergencies' && (
+                                    <>Need help? <Link href="/get-help" className="text-indigo-600 hover:underline">Request emergency assistance</Link></>
+                                )}
+                                {activeSection === 'supports' && (
+                                    <>Want to help others? <Link href="/get-help" className="text-indigo-600 hover:underline">Offer support now</Link></>
+                                )}
+                                {activeSection === 'donations' && (
+                                    <>Make a difference? <Link href="/donate" className="text-indigo-600 hover:underline">Donate now</Link></>
+                                )}
+                                {activeSection === 'volunteering' && (
+                                    <>Ready to volunteer? <Link href="/volunteer" className="text-indigo-600 hover:underline">Check opportunities</Link></>
+                                )}
+                            </p>
+                        </div>
+                    ) : (
+                        getDataForSection().map((item) => {
+                            const requestId = item.requestId || item.receiptId || item.id;
+                            const status = item.status?.toLowerCase() || 'pending';
+                            const statusColor = getStatusColor(status);
+                            const statusTextColor = getStatusTextColor(status);
+                            const borderColor = getBorderColor(status);
+
+                            // Redesigned cards with status dot indicator
+                            if (activeSection === 'volunteering') {
+                                return (
+                                    <div key={requestId} className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${borderColor}`}>
+                                        <div className="p-6">
+                                            <div className="flex justify-between items-start mb-5">
+                                                <div className="flex items-center">
+                                                    <h3 className="font-semibold text-xl text-gray-900">{item.id}</h3>
+                                                </div>
+                                                <div className={`text-sm px-3 py-1 rounded-full font-medium bg-blue-100 text-blue-800`}>
+                                                    {item.hours} hours
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center">
+                                                        <span className="font-medium text-gray-700 w-24">Event:</span>
+                                                        <span className="text-gray-600">{item.event}</span>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <span className="font-medium text-gray-700 w-24">Date:</span>
+                                                        <span className="text-gray-600">{formatDate(item.date)}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-blue-50 rounded-lg p-4">
+                                                    <p className="text-blue-800 text-sm">
+                                                        Thank you for your volunteer work! Your contribution is making a real difference to those affected by disasters.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+                                                <div className="text-sm text-gray-500">
+                                                    Volunteer ID: {item.id}
+                                                </div>
+                                                <Link href="/volunteer" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                                                    View more opportunities →
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            } else if (activeSection === 'donations') {
+                                return (
+                                    <div key={requestId} className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${borderColor}`}>
+                                        <div className="p-6">
+                                            <div className="flex justify-between items-start mb-5">
+                                                <div className="flex items-center">
+                                                    <h3 className="font-semibold text-xl text-gray-900">{item.receiptId}</h3>
+                                                </div>
+                                                <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                                                    ₹{item.amount}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center">
+                                                        <span className="font-medium text-gray-700 w-28">Donor:</span>
+                                                        <span className="text-gray-600">{item.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <span className="font-medium text-gray-700 w-28">Disaster:</span>
+                                                        <span className="text-gray-600">{item.disaster}</span>
+                                                    </div>
+                                                    {item.date && (
+                                                        <div className="flex items-center">
+                                                            <span className="font-medium text-gray-700 w-28">Date:</span>
+                                                            <span className="text-gray-600">{formatDate(item.date || new Date())}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="bg-green-50 rounded-lg p-4">
+                                                    <p className="text-green-800 text-sm">
+                                                        Thank you for your generous donation! Your contribution is helping those affected by {item.disaster}.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+                                                <div className="text-sm text-gray-500">
+                                                    Receipt: {item.receiptId}
+                                                </div>
+                                                <Link href="/donate" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                                                    Donate again →
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            } else {
+                                // Emergency and Support requests
+                                return (
+                                    <div key={requestId} className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${borderColor}`}>
+                                        <div className="p-6">
+                                            <div className="flex justify-between items-start mb-5">
+                                                <div className="flex items-center">
+                                                    <div className={`h-3 w-3 rounded-full ${statusColor} mr-3`}></div>
+                                                    <h3 className="font-semibold text-xl text-gray-900">{item.requestId}</h3>
+                                                </div>
+                                                <div className={`text-sm px-3 py-1 rounded-full font-medium ${statusTextColor} bg-opacity-20`} style={{backgroundColor: `${statusColor}25`}}>
+                                                    {item.status || 'Pending'}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center">
+                                                        <span className="font-medium text-gray-700 w-28">Requester:</span>
+                                                        <span className="text-gray-600">{item.name}</span>
+                                                    </div>
+                                                    {item.type && (
+                                                        <div className="flex items-center">
+                                                            <span className="font-medium text-gray-700 w-28">Type:</span>
+                                                            <span className="text-gray-600">{item.type}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.createdAt && (
+                                                        <div className="flex items-center">
+                                                            <span className="font-medium text-gray-700 w-28">Created:</span>
+                                                            <span className="text-gray-600">{formatDate(item.createdAt)}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.location && (
+                                                        <div className="flex items-center">
+                                                            <span className="font-medium text-gray-700 w-28">Location:</span>
+                                                            <span className="text-gray-600">{item.location}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {item.details && (
+                                                    <div className="mt-3 p-3 bg-gray-50 rounded-md text-gray-700 text-sm">
+                                                        <div className="font-medium mb-1">Details:</div>
+                                                        <p className="line-clamp-2">{item.details}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="px-5 py-3 bg-gray-50 flex justify-between items-center">
+                                            <div className="text-xs text-gray-500">
+                                                Reference: {item.requestId}
+                                            </div>
+                                            <Link
+                                                href={activeSection === 'emergencies' ? "/get-help" : "/get-help"}
+                                                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                                            >
+                                                {activeSection === 'emergencies' ? 'Request again' : 'Raise request again'}
+                                            </Link>
+                                        </div>
+                                    </div>
+                                );
+                            }
+                        })
+                    )}
+                </div>
+            </main>
         </div>
     );
 }
