@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Phone, AlertCircle, HeartHandshake, Gift, ArrowLeft, Menu, Clock, Calendar, CheckCircle, XCircle, Home } from 'lucide-react';
 
-// Mock call function (replace with real VoIP integration later)
+// Improved call function that opens the dialer directly
 const handleCall = (phone) => {
-    alert(`Calling ${phone}... (Mock call)`);
-    console.log(`Initiating call to ${phone}`);
+    const formatted = phone.replace(/\s+/g, '').replace(/-/g, '');
+    window.location.href = `tel:${formatted}`;
 };
 
 // Mock update status function (replace with real API call)
@@ -375,10 +375,10 @@ export default function PersonnelPage() {
                             <Menu className="w-6 h-6" />
                         </button>
 
-                        {/* Title and section indicator */}
+                        {/* Title and section indicator - REMOVED ARROW IN MOBILE VIEW */}
                         <div>
                             <div className="flex items-center">
-                                <Link href="/" className="inline-flex items-center text-gray-600 hover:text-gray-900 mr-3">
+                                <Link href="/" className="hidden md:inline-flex items-center text-gray-600 hover:text-gray-900 mr-3">
                                     <ArrowLeft className="w-4 h-4" />
                                 </Link>
                                 <h1 className="text-2xl font-bold text-gray-900">
