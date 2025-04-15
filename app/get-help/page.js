@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import Footer from "@/app/components/Footer";
 
 export default function GetHelpPage() {
     const { data: session, status, update } = useSession();
@@ -589,6 +590,8 @@ export default function GetHelpPage() {
                     </li>
                 </ul>
             </div>
+
+            <Footer />
         </div>
     );
 }
