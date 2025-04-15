@@ -3,7 +3,8 @@
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import Footer from "@/app/components/Footer";
+import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
 
 export default function GetHelpPage() {
     const { data: session, status, update } = useSession();
@@ -54,6 +55,9 @@ export default function GetHelpPage() {
                             ...prev,
                             name: userData.name || "",
                             contact: userData.phone || "",
+                            location: userData.address
+                                ? `${userData.address.street || ""}, ${userData.address.city || ""}, ${userData.address.state || ""}, ${userData.address.postalCode || ""}, ${userData.address.country || ""}`.replace(/, ,/g, ",").replace(/^,|,$/g, "")
+                                : "",
                         }));
                         setSupportFormData((prev) => ({
                             ...prev,
@@ -223,6 +227,9 @@ export default function GetHelpPage() {
                             ...prev,
                             name: userData.name || "",
                             contact: userData.phone || "",
+                            location: userData.address
+                                ? `${userData.address.street || ""}, ${userData.address.city || ""}, ${userData.address.state || ""}, ${userData.address.postalCode || ""}, ${userData.address.country || ""}`.replace(/, ,/g, ",").replace(/^,|,$/g, "")
+                                : "",
                         }));
                         setSupportFormData((prev) => ({
                             ...prev,
@@ -242,6 +249,20 @@ export default function GetHelpPage() {
 
     return (
         <div className="max-w-3xl mx-auto px-4 py-8">
+            {/* Top Navigation with Back Button */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5 }}
+                    onClick={() => window.history.back()}
+                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300"
+                >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                </motion.button>
+            </div>
+
             <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold text-blue-900 mb-2">We&apos;re Here For You</h1>
                 <p className="text-gray-600">Your safety and wellbeing come first. Let&apos;s get through this together.</p>
@@ -573,8 +594,6 @@ export default function GetHelpPage() {
                 </div>
             )}
 
-
-
             <div className="bg-red-100 p-6 rounded-lg">
                 <h3 className="text-xl font-semibold text-red-900 mb-4">Emergency Numbers</h3>
                 <p className="text-red-800 mb-4">If you need immediate emergency services:</p>
@@ -590,8 +609,6 @@ export default function GetHelpPage() {
                     </li>
                 </ul>
             </div>
-
-            <Footer />
         </div>
     );
 }
