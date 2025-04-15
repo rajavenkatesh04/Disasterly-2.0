@@ -2,34 +2,38 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(req) {
-    const token = await getToken({ req });
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     const { pathname } = req.nextUrl;
 
-    console.log("🔍 Middleware - Checking access for:", pathname);
-    console.log("🔑 Token found:", !!token);
+    console.log("🔍 Middleware - Checking:", pathname);
+    console.log("🔑 Token:", !!token);
 
-    // Allow public pages & API authentication routes
-    if (pathname.startsWith("/api/auth") || pathname === "/complete-profile") {
+    // Allow public and auth-related routes
+    if (pathname.startsWith("/api/auth") || pathname === "/signin" || pathname === "/complete-profile") {
         return NextResponse.next();
     }
 
-    // If no token, redirect to sign-in page
-    if (!token) {
-        console.log("❌ No token found, redirecting to sign-in...");
-        return NextResponse.redirect(new URL("/api/auth/signin", req.url));
+    // Protect all routes under /panel, /dashboard, /profile, /settings
+    if (pathname.startsWith("/panel") || pathname.startsWith("/dashboard") || pathname.startsWith("/profile") || pathname.startsWith("/settings")) {
+        if (!token) {
+            console.log("❌ No token, redirecting to signin...");
+            const url = new URL("/signin", req.url);
+            url.searchParams.set("callbackUrl", encodeURIComponent(req.url));
+            return NextResponse.redirect(url);
+        }
+
+        if (token && !token.isProfileComplete && pathname !== "/complete-profile") {
+            console.log("⚠️ Profile incomplete, redirecting to complete-profile...");
+            const url = new URL("/complete-profile", req.url);
+            url.searchParams.set("callbackUrl", encodeURIComponent("/")); // Force callback to homepage
+            return NextResponse.redirect(url);
+        }
     }
 
-    // If profile is incomplete, force redirect to complete profile
-    if (!token.isProfileComplete && pathname !== "/complete-profile") {
-        console.log("⚠️ Profile incomplete, redirecting to complete-profile...");
-        return NextResponse.redirect(new URL("/complete-profile", req.url));
-    }
-
-    // Allow access
+    // Allow unmatched routes to proceed (Next.js will handle 404)
     return NextResponse.next();
 }
 
-// Protect these routes
 export const config = {
-    matcher: ["/dashboard", "/panel", "/settings"], // Add more protected routes here
+    matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

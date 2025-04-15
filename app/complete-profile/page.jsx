@@ -1,4 +1,5 @@
 "use client";
+
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -7,7 +8,9 @@ import axios from "axios";
 export default function CompleteProfile() {
     const { data: session, update, status } = useSession();
     const router = useRouter();
+    const callbackUrl = "/";
     const [formData, setFormData] = useState({
+        name: "",  // Include name field
         gender: "",
         dateOfBirth: "",
         phone: "",
@@ -20,15 +23,25 @@ export default function CompleteProfile() {
         }
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
+    const [error, setError] = useState("");
+    const [userId, setUserId] = useState("");
+
+    // Set initial name from session when available
+    useEffect(() => {
+        if (status === "authenticated" && session?.user?.name) {
+            setFormData(prev => ({
+                ...prev,
+                name: session.user.name
+            }));
+        }
+    }, [session, status]);
 
     useEffect(() => {
-        // Only check after session is loaded
         if (status === "authenticated" && session?.user?.isProfileComplete) {
-            router.push('/dashboard');
+            router.push(callbackUrl);
         }
-    }, [session, status, router]);
+    }, [session, status, router, callbackUrl]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -53,31 +66,49 @@ export default function CompleteProfile() {
         e.preventDefault();
         setIsSubmitting(true);
         setError("");
+
         try {
-            // Changed endpoint from /api/database/updateUser to /api/profile/update
-            const response = await axios.post("/api/profile/update", {
-                ...formData,
-                // No need to send email since we'll get it from the session
-            });
-            if (response.status === 200) {
+            const response = await axios.post("/api/profile/update", formData);
+
+            if (response.data.success) {
+                // Extract userId from response - prioritize the direct userId field if available
+                const generatedUserId = response.data.userId || response.data.user?.userId || "";
                 setSuccess(true);
-                // Update the session data with proper isProfileComplete value
+                setUserId(generatedUserId);
+
+                console.log("Generated User ID:", generatedUserId);
+
+                // Update session with the new profile information
                 await update({
                     user: {
                         ...session.user,
-                        isProfileComplete: true
+                        isProfileComplete: true,
+                        userId: generatedUserId,
+                        intendedRoute: callbackUrl
                     }
                 });
-                // Add a longer delay to ensure session is updated before redirect
+
+                // Show success message with ID for 3 seconds before redirecting
                 setTimeout(() => {
-                    router.push('/dashboard');
-                }, 2000);
+                    // Sign out and back in to refresh token
+                    window.location.href = "/signin?callbackUrl=" + encodeURIComponent(callbackUrl);
+                }, 3000);
             } else {
-                setError("Failed to update profile");
+                setError(response.data.message || "Failed to update profile");
             }
         } catch (error) {
             console.error("Error submitting form:", error);
-            setError(error.response?.data?.error || "An unexpected error occurred");
+
+            // Improved error handling
+            let errorMessage = "An unexpected error occurred";
+
+            if (error.response && error.response.data && error.response.data.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            setError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
@@ -99,25 +130,6 @@ export default function CompleteProfile() {
         return (
             <div className="min-h-screen flex justify-center items-center">
                 <p className="text-gray-600">Redirecting to signin...</p>
-            </div>
-        );
-    }
-
-    if (success) {
-        return (
-            <div className="min-h-screen flex justify-center items-center">
-                <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
-                    <div className="mb-4 text-green-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Profile Updated Successfully!</h2>
-                    <p className="text-gray-600 mb-4">Redirecting you to the dashboard...</p>
-                    <div className="animate-pulse">
-                        <div className="h-2 bg-blue-200 rounded"></div>
-                    </div>
-                </div>
             </div>
         );
     }
@@ -144,7 +156,39 @@ export default function CompleteProfile() {
                         </div>
                     )}
 
+                    {success && userId && (
+                        <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-green-700">
+                                        Profile updated successfully! <br />
+                                        <span className="font-medium">Your ID: {userId}</span><br />
+                                        <span className="text-xs">Redirecting in a few seconds...</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Your full name"
+                            />
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
                             <select
@@ -189,7 +233,6 @@ export default function CompleteProfile() {
 
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <h3 className="text-md font-medium text-gray-700 mb-3">Address Information</h3>
-
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Street</label>
@@ -203,7 +246,6 @@ export default function CompleteProfile() {
                                         placeholder="123 Main St"
                                     />
                                 </div>
-
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
@@ -217,7 +259,6 @@ export default function CompleteProfile() {
                                             placeholder="New York"
                                         />
                                     </div>
-
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
                                         <input
@@ -231,7 +272,6 @@ export default function CompleteProfile() {
                                         />
                                     </div>
                                 </div>
-
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
@@ -245,7 +285,6 @@ export default function CompleteProfile() {
                                             placeholder="10001"
                                         />
                                     </div>
-
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                                         <input
@@ -265,8 +304,14 @@ export default function CompleteProfile() {
                         <div>
                             <button
                                 type="submit"
-                                disabled={isSubmitting}
-                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={isSubmitting || success}
+                                className={`w-full flex justify-center py-3 px-4 rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-500 ease-in-out ${
+                                    isSubmitting
+                                        ? "bg-gray-400 animate-pulse"
+                                        : success
+                                            ? "bg-green-600 flex items-center justify-center"
+                                            : "bg-blue-600 hover:bg-blue-700"
+                                }`}
                             >
                                 {isSubmitting ? (
                                     <>
@@ -276,7 +321,16 @@ export default function CompleteProfile() {
                                         </svg>
                                         Processing...
                                     </>
-                                ) : "Complete Profile"}
+                                ) : success ? (
+                                    <>
+                                        <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Profile Complete
+                                    </>
+                                ) : (
+                                    "Complete Profile"
+                                )}
                             </button>
                         </div>
                     </form>

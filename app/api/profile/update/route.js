@@ -1,9 +1,8 @@
-// app/api/profile/update/route.js
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]/route";
-import dbConnect from "@/app/utils/mongoClient";
-import User from "@/lib/mongodb/models/User";
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path
+import { dbConnect } from "@/lib/mongodb/connection";
+import User from "@/lib/mongodb/models/User";
 
 export async function POST(req) {
     try {
@@ -13,65 +12,132 @@ export async function POST(req) {
         // Check if user is authenticated
         if (!session?.user?.email) {
             return NextResponse.json(
-                { error: "You must be signed in to update your profile" },
+                { error: "Unauthorized" },
                 { status: 401 }
             );
         }
 
         // Parse request body
-        const data = await req.json();
-        console.log("Received profile data:", data); // Debug log to see incoming data
+        const formData = await req.json();
+        console.log("Received profile data:", formData); // Debug log to see incoming data
 
-        // Connect to database
+        // Connect to database using mongoose
         await dbConnect();
 
-        // Update user profile with ALL form fields
-        const updatedUser = await User.findOneAndUpdate(
-            { email: session.user.email },
-            {
-                // Keep existing name if data.name is not provided
-                ...(session.user.name && { name: session.user.name }),
+        // Generate unique USER-XXXXXX ID
+        const timestamp = Date.now().toString(36); // Base36 timestamp
+        const random = Math.random().toString(36).substr(2, 5); // 5 random chars
+        let userId = `USER-${timestamp}-${random}`;
 
-                // Store all the form fields from complete-profile
-                gender: data.gender,
-                dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
-                phone: data.phone,
+        // Check for uniqueness using mongoose
+        let isUnique = false;
+        let attempt = 0;
+        const maxAttempts = 5;
 
-                // Store the complete address object
-                address: {
-                    street: data.address?.street,
-                    city: data.address?.city,
-                    state: data.address?.state,
-                    postalCode: data.address?.postalCode,
-                    country: data.address?.country
-                },
+        while (!isUnique && attempt < maxAttempts) {
+            const existingUser = await User.findOne({ userId });
+            if (!existingUser) isUnique = true;
+            else {
+                const newRandom = Math.random().toString(36).substr(2, 5);
+                userId = `USER-${timestamp}-${newRandom}`;
+            }
+            attempt++;
+        }
 
-                // Mark profile as complete and track update time
-                isProfileComplete: true,
-                profileUpdatedAt: new Date()
-            },
-            { new: true }
-        );
+        if (!isUnique) return NextResponse.json({ error: "Failed to generate unique ID" }, { status: 500 });
 
-        if (!updatedUser) {
+        // Validate dateOfBirth
+        const dateOfBirth = formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined;
+        if (formData.dateOfBirth && isNaN(dateOfBirth)) {
             return NextResponse.json(
-                { error: "User not found" },
-                { status: 404 }
+                { error: "Invalid date of birth format" },
+                { status: 400 }
             );
         }
 
-        console.log("Profile updated successfully:", updatedUser); // Debug log
+        // Update user profile with ALL form fields using the mongoose model
+        try {
+            const updatedUser = await User.findOneAndUpdate(
+                { email: session.user.email },
+                {
+                    name: formData.name || session.user.name, // Prioritize form data, fallback to session
+                    image: session.user.image, // Preserve Google image
+                    gender: formData.gender,
+                    dateOfBirth: dateOfBirth,
+                    phone: formData.phone,
+                    address: {
+                        street: formData.address?.street,
+                        city: formData.address?.city,
+                        state: formData.address?.state,
+                        postalCode: formData.address?.postalCode,
+                        country: formData.address?.country,
+                    },
+                    userId: userId,
+                    isProfileComplete: true,
+                    profileUpdatedAt: new Date(),
+                },
+                { new: true, runValidators: true, upsert: true }
+            );
 
-        // Return success
-        return NextResponse.json({
-            success: true,
-            message: "Profile updated successfully",
-            isProfileComplete: true
-        });
+            console.log("Profile updated successfully (Mongoose):", updatedUser);
+            return NextResponse.json({
+                success: true,
+                message: "Profile updated successfully",
+                isProfileComplete: true,
+                user: updatedUser,
+                userId: userId // Explicitly include userId in the response
+            });
+        } catch (mongooseError) {
+            console.error("Mongoose update failed:", mongooseError);
+
+            // If user wasn't found with the mongoose model, try alternative approach
+            try {
+                // Use the mongoose connection to access the collection directly
+                const collection = mongoose.connection.collection('users');
+                const result = await collection.findOneAndUpdate(
+                    { email: session.user.email },
+                    {
+                        $set: {
+                            name: formData.name || session.user.name,
+                            image: session.user.image,
+                            gender: formData.gender,
+                            dateOfBirth: dateOfBirth,
+                            phone: formData.phone,
+                            address: {
+                                street: formData.address?.street,
+                                city: formData.address?.city,
+                                state: formData.address?.state,
+                                postalCode: formData.address?.postalCode,
+                                country: formData.address?.country,
+                            },
+                            userId: userId,
+                            isProfileComplete: true,
+                            profileUpdatedAt: new Date(),
+                        }
+                    },
+                    { returnDocument: "after", upsert: true }
+                );
+
+                console.log("Profile updated successfully (direct collection):", result.value);
+                return NextResponse.json({
+                    success: true,
+                    message: "Profile updated successfully",
+                    isProfileComplete: true,
+                    user: result.value,
+                    userId: userId
+                });
+            } catch (directError) {
+                console.error("Direct collection update failed:", directError);
+                return NextResponse.json(
+                    { error: directError.message || "Failed to update profile" },
+                    { status: 500 }
+                );
+            }
+        }
     } catch (error) {
         console.error("Error updating profile:", error);
         return NextResponse.json(
-            { error: "Failed to update profile" },
+            { error: error.message || "Failed to update profile" },
             { status: 500 }
         );
     }

@@ -80,7 +80,7 @@ export default function PanelPage() {
                 {/* Sidebar (Desktop) */}
                 <aside className="hidden md:block w-64 bg-white shadow-lg h-screen fixed">
                     <div className="p-6">
-                        <h2 className="text-2xl font-bold text-indigo-900 mb-8">Admin Panel</h2>
+                        <h2 className="text-2xl font-bold text-indigo-900 mb-8">Profile</h2>
                         <nav>
                             <ul className="space-y-2">
                                 <li>
