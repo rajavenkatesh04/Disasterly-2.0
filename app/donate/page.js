@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import axios from 'axios';
 
 export default function DonatePage() {
+    const { data: session, status } = useSession();
     const [amount, setAmount] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -139,6 +142,14 @@ export default function DonatePage() {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (status === 'authenticated' && session?.user) {
+            setName(session.user.name || '');
+            setEmail(session.user.email || '');
+            setCardHolder(session.user.name || ''); // Assuming cardholder is same as name
+        }
+    }, [session, status]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50">
