@@ -1,19 +1,28 @@
+// pages/panel.jsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import { AlertCircle, HeartHandshake, Gift, ArrowLeft, Menu, User, Home } from 'lucide-react';
+import { AlertCircle, HeartHandshake, Gift, ArrowLeft, Menu, User, Home, Phone, Calendar } from 'lucide-react';
+
+// Function to handle the call functionality
+const handleCall = (phone) => {
+    if (!phone) return;
+    const formatted = phone.replace(/\s+/g, '').replace(/-/g, '');
+    window.location.href = `tel:${formatted}`;
+};
 
 // Component for skeleton loader cards
 const SkeletonCard = () => (
-    <div className="bg-white rounded-xl shadow-sm p-6 mb-4 w-full">
-        <div className="h-5 bg-gray-200 rounded w-3/4 mb-4"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
-        <div className="h-20 bg-gray-100 rounded mb-4"></div>
-        <div className="h-10 bg-gray-200 rounded"></div>
+    <div className="bg-white rounded-xl shadow-sm p-4 mb-4 min-h-[200px] w-full">
+        <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+        <div className="h-16 bg-gray-100 rounded mb-3"></div>
+        <div className="h-8 bg-gray-200 rounded"></div>
     </div>
 );
 
@@ -26,6 +35,7 @@ export default function PanelPage() {
     const [donations, setDonations] = useState([]);
     const [volunteering, setVolunteering] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [assignees, setAssignees] = useState({});
 
     // Fetch data client-side with user-specific userId
     useEffect(() => {
@@ -37,25 +47,59 @@ export default function PanelPage() {
                     const emergenciesRes = await fetch(`/api/emergencies?userId=${session.user.userId}`);
                     if (!emergenciesRes.ok) throw new Error('Failed to fetch emergencies');
                     const emergenciesData = await emergenciesRes.json();
+                    console.log('Emergencies Data:', emergenciesData); // Debug
                     setEmergencies(emergenciesData);
 
                     // Fetch supports for the user
                     const supportsRes = await fetch(`/api/supports?userId=${session.user.userId}`);
                     if (!supportsRes.ok) throw new Error('Failed to fetch supports');
                     const supportsData = await supportsRes.json();
+                    console.log('Supports Data:', supportsData); // Debug
                     setSupports(supportsData);
 
                     // Fetch donations for the user
                     const donationsRes = await fetch(`/api/donations?userId=${session.user.userId}`);
                     if (!donationsRes.ok) throw new Error('Failed to fetch donations');
                     const donationsData = await donationsRes.json();
+                    console.log('Donations Data:', donationsData); // Debug
                     setDonations(donationsData);
 
-                    // Mock volunteering data (filter by userId if real data added)
+                    // Mock volunteering data
                     setVolunteering([
                         { id: 'VOL1', event: 'Assam Floods Cleanup', date: '2025-03-15', hours: 4, userId: session.user.userId },
                         { id: 'VOL2', event: 'Kerala Relief Camp', date: '2024-12-10', hours: 6, userId: session.user.userId },
                     ].filter(v => v.userId === session.user.userId));
+
+                    // Fetch assignees for emergencies and supports
+                    const assigneeIds = [...emergenciesData, ...supportsData]
+                        .filter(item => item.assignee)
+                        .map(item => item.assignee);
+                    console.log('Assignee IDs:', assigneeIds); // Debug
+
+                    if (assigneeIds.length > 0) {
+                        try {
+                            const res = await fetch('/api/assignees', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userIds: assigneeIds }),
+                            });
+                            console.log('Assignees API response status:', res.status); // Debug
+                            if (!res.ok) {
+                                console.warn('Failed to fetch assignees:', res.status);
+                                setAssignees({});
+                            } else {
+                                const data = await res.json();
+                                console.log('Assignees Data:', data); // Debug
+                                setAssignees(data.assignees || {});
+                            }
+                        } catch (error) {
+                            console.error('Error fetching assignees:', error);
+                            setAssignees({});
+                        }
+                    } else {
+                        console.log('No assignee IDs to fetch');
+                        setAssignees({});
+                    }
                 } catch (error) {
                     console.error('Error fetching data:', error);
                 } finally {
@@ -66,6 +110,8 @@ export default function PanelPage() {
         }
     }, [session, status]);
 
+    // ... (rest of the component remains unchanged: toggleSidebar, getStatusColor, getBorderColor, getStatusTextColor, getIconForSection, getDataForSection, formatDate, and the JSX return)
+
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
@@ -73,16 +119,16 @@ export default function PanelPage() {
     const getStatusColor = (status) => {
         switch (status?.toLowerCase()) {
             case 'pending':
-                return 'bg-amber-500';
+                return 'bg-amber-100 text-amber-800 border-amber-200';
             case 'in progress':
-                return 'bg-blue-500';
+                return 'bg-blue-100 text-blue-800 border-blue-200';
             case 'completed':
-                return 'bg-green-500';
+                return 'bg-green-100 text-green-800 border-green-200';
             case 'urgent':
             case 'critical':
-                return 'bg-red-500';
+                return 'bg-red-100 text-red-800 border-red-200';
             default:
-                return 'bg-gray-400';
+                return 'bg-gray-100 text-gray-800 border-gray-200';
         }
     };
 
@@ -98,7 +144,7 @@ export default function PanelPage() {
             case 'critical':
                 return 'border-red-500';
             default:
-                return 'border-gray-400';
+                return 'border-gray-300';
         }
     };
 
@@ -128,8 +174,8 @@ export default function PanelPage() {
         }
     };
 
-    const getDataForSection = () => {
-        switch (activeSection) {
+    const getDataForSection = (section) => {
+        switch (section) {
             case 'emergencies': return emergencies;
             case 'supports': return supports;
             case 'donations': return donations;
@@ -142,9 +188,10 @@ export default function PanelPage() {
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         return new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
             month: 'short',
-            day: 'numeric'
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
         }).format(date);
     };
 
@@ -177,78 +224,26 @@ export default function PanelPage() {
                             My Activities
                         </div>
                         <ul className="space-y-1">
-                            <li>
-                                <button
-                                    onClick={() => setActiveSection('emergencies')}
-                                    className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
-                                        activeSection === 'emergencies'
-                                            ? 'bg-indigo-50 text-indigo-700 font-medium'
-                                            : 'text-gray-700 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <AlertCircle className={`w-5 h-5 ${activeSection === 'emergencies' ? 'text-indigo-500' : 'text-gray-500'}`} />
-                                    <span>Emergency Requests</span>
-                                    {emergencies.length > 0 && (
-                                        <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
-                                            {emergencies.length}
-                                        </span>
-                                    )}
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() => setActiveSection('supports')}
-                                    className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
-                                        activeSection === 'supports'
-                                            ? 'bg-indigo-50 text-indigo-700 font-medium'
-                                            : 'text-gray-700 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <HeartHandshake className={`w-5 h-5 ${activeSection === 'supports' ? 'text-indigo-500' : 'text-gray-500'}`} />
-                                    <span>Support Requests</span>
-                                    {supports.length > 0 && (
-                                        <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
-                                            {supports.length}
-                                        </span>
-                                    )}
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() => setActiveSection('donations')}
-                                    className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
-                                        activeSection === 'donations'
-                                            ? 'bg-indigo-50 text-indigo-700 font-medium'
-                                            : 'text-gray-700 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <Gift className={`w-5 h-5 ${activeSection === 'donations' ? 'text-indigo-500' : 'text-gray-500'}`} />
-                                    <span>Donations Made</span>
-                                    {donations.length > 0 && (
-                                        <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
-                                            {donations.length}
-                                        </span>
-                                    )}
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() => setActiveSection('volunteering')}
-                                    className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
-                                        activeSection === 'volunteering'
-                                            ? 'bg-indigo-50 text-indigo-700 font-medium'
-                                            : 'text-gray-700 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <User className={`w-5 h-5 ${activeSection === 'volunteering' ? 'text-indigo-500' : 'text-gray-500'}`} />
-                                    <span>Volunteering History</span>
-                                    {volunteering.length > 0 && (
-                                        <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
-                                            {volunteering.length}
-                                        </span>
-                                    )}
-                                </button>
-                            </li>
+                            {['emergencies', 'supports', 'donations', 'volunteering'].map(section => (
+                                <li key={section}>
+                                    <button
+                                        onClick={() => setActiveSection(section)}
+                                        className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
+                                            activeSection === section
+                                                ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                                : 'text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        {getIconForSection(section)}
+                                        <span>{section.charAt(0).toUpperCase() + section.slice(1)}</span>
+                                        {getDataForSection(section).length > 0 && (
+                                            <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
+                                                {getDataForSection(section).length}
+                                            </span>
+                                        )}
+                                    </button>
+                                </li>
+                            ))}
                         </ul>
                     </nav>
                 </div>
@@ -267,8 +262,8 @@ export default function PanelPage() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 p-4 md:p-8">
-                <div className="flex items-center justify-between mb-6">
+            <main className="flex-1 p-4 md:p-6">
+                <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                         <button
                             onClick={toggleSidebar}
@@ -301,7 +296,7 @@ export default function PanelPage() {
                     </div>
                 </div>
 
-                <div className="mb-6 flex justify-center md:justify-start">
+                <div className="mb-4 flex justify-center md:justify-start">
                     <div className={`inline-flex items-center px-4 py-2 rounded-full ${
                         activeSection === 'emergencies' ? 'bg-red-50 text-red-700' :
                             activeSection === 'supports' ? 'bg-blue-50 text-blue-700' :
@@ -310,81 +305,64 @@ export default function PanelPage() {
                     }`}>
                         {getIconForSection(activeSection)}
                         <span className="ml-2 font-medium">
-                            {getDataForSection().length} {activeSection} {getDataForSection().length === 1 ? 'item' : 'items'}
+                            {getDataForSection(activeSection).length} {activeSection} to manage
                         </span>
                     </div>
                 </div>
 
-                {/* Content Display - Now with Wider Cards */}
-                <div className="space-y-6">
+                {/* Content Display */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {loading ? (
-                        Array(3).fill().map((_, i) => <SkeletonCard key={i} />)
-                    ) : getDataForSection().length === 0 ? (
-                        <div className="flex flex-col items-center justify-center text-gray-500 py-16 bg-white rounded-xl shadow-sm">
+                        Array(6).fill().map((_, i) => <SkeletonCard key={`skeleton-${i}`} />)
+                    ) : getDataForSection(activeSection).length === 0 ? (
+                        <div className="col-span-full flex flex-col items-center justify-center text-gray-500 py-12">
                             <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                 {getIconForSection(activeSection)}
                             </div>
                             <p className="text-lg font-medium">No {activeSection} to display</p>
-                            <p className="text-sm mt-2">
-                                {activeSection === 'emergencies' && (
-                                    <>Need help? <Link href="/get-help" className="text-indigo-600 hover:underline">Request emergency assistance</Link></>
-                                )}
-                                {activeSection === 'supports' && (
-                                    <>Want to help others? <Link href="/get-help" className="text-indigo-600 hover:underline">Offer support now</Link></>
-                                )}
-                                {activeSection === 'donations' && (
-                                    <>Make a difference? <Link href="/donate" className="text-indigo-600 hover:underline">Donate now</Link></>
-                                )}
-                                {activeSection === 'volunteering' && (
-                                    <>Ready to volunteer? <Link href="/volunteer" className="text-indigo-600 hover:underline">Check opportunities</Link></>
-                                )}
-                            </p>
+                            <p className="text-sm">All caught up! Check back later.</p>
                         </div>
                     ) : (
-                        getDataForSection().map((item) => {
+                        getDataForSection(activeSection).map((item) => {
                             const requestId = item.requestId || item.receiptId || item.id;
                             const status = item.status?.toLowerCase() || 'pending';
                             const statusColor = getStatusColor(status);
                             const statusTextColor = getStatusTextColor(status);
                             const borderColor = getBorderColor(status);
+                            const assignee = assignees[item.assignee];
 
-                            // Redesigned cards with status dot indicator
                             if (activeSection === 'volunteering') {
                                 return (
                                     <div key={requestId} className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${borderColor}`}>
-                                        <div className="p-6">
-                                            <div className="flex justify-between items-start mb-5">
+                                        <div className="p-4">
+                                            <div className="flex justify-between items-start mb-3">
                                                 <div className="flex items-center">
-                                                    <h3 className="font-semibold text-xl text-gray-900">{item.id}</h3>
+                                                    <h3 className="font-semibold text-gray-900 text-sm">{item.id}</h3>
                                                 </div>
-                                                <div className={`text-sm px-3 py-1 rounded-full font-medium bg-blue-100 text-blue-800`}>
+                                                <div className={`text-sm px-2 py-1 rounded-full font-medium ${statusColor}`}>
                                                     {item.hours} hours
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center">
-                                                        <span className="font-medium text-gray-700 w-24">Event:</span>
-                                                        <span className="text-gray-600">{item.event}</span>
-                                                    </div>
-                                                    <div className="flex items-center">
-                                                        <span className="font-medium text-gray-700 w-24">Date:</span>
-                                                        <span className="text-gray-600">{formatDate(item.date)}</span>
-                                                    </div>
+                                            <div className="mb-3 space-y-1 text-xs">
+                                                <div className="flex items-start">
+                                                    <span className="font-medium text-gray-700 w-20">Event:</span>
+                                                    <span className="text-gray-600">{item.event}</span>
                                                 </div>
-
-                                                <div className="bg-blue-50 rounded-lg p-4">
-                                                    <p className="text-blue-800 text-sm">
-                                                        Thank you for your volunteer work! Your contribution is making a real difference to those affected by disasters.
-                                                    </p>
+                                                <div className="flex items-start">
+                                                    <span className="font-medium text-gray-700 w-20">Date:</span>
+                                                    <span className="text-gray-600">{formatDate(item.date)}</span>
                                                 </div>
                                             </div>
 
-                                            <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                                                <div className="text-sm text-gray-500">
-                                                    Volunteer ID: {item.id}
-                                                </div>
+                                            <div className="bg-blue-50 rounded-lg p-4">
+                                                <p className="text-blue-800 text-sm">
+                                                    Thank you for your volunteer work! Your contribution is making a real difference to those affected by disasters.
+                                                </p>
+                                            </div>
+
+                                            <div className="text-xs flex justify-between items-center mt-4">
+                                                <span className="text-gray-700">Volunteer ID: {item.id}</span>
                                                 <Link href="/volunteer" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
                                                     View more opportunities →
                                                 </Link>
@@ -395,45 +373,41 @@ export default function PanelPage() {
                             } else if (activeSection === 'donations') {
                                 return (
                                     <div key={requestId} className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${borderColor}`}>
-                                        <div className="p-6">
-                                            <div className="flex justify-between items-start mb-5">
+                                        <div className="p-4">
+                                            <div className="flex justify-between items-start mb-3">
                                                 <div className="flex items-center">
-                                                    <h3 className="font-semibold text-xl text-gray-900">{item.receiptId}</h3>
+                                                    <h3 className="font-semibold text-gray-900 text-sm">{item.receiptId}</h3>
                                                 </div>
                                                 <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
                                                     ₹{item.amount}
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center">
-                                                        <span className="font-medium text-gray-700 w-28">Donor:</span>
-                                                        <span className="text-gray-600">{item.name}</span>
-                                                    </div>
-                                                    <div className="flex items-center">
-                                                        <span className="font-medium text-gray-700 w-28">Disaster:</span>
-                                                        <span className="text-gray-600">{item.disaster}</span>
-                                                    </div>
-                                                    {item.date && (
-                                                        <div className="flex items-center">
-                                                            <span className="font-medium text-gray-700 w-28">Date:</span>
-                                                            <span className="text-gray-600">{formatDate(item.date || new Date())}</span>
-                                                        </div>
-                                                    )}
+                                            <div className="mb-3 space-y-1 text-xs">
+                                                <div className="flex items-start">
+                                                    <span className="font-medium text-gray-700 w-20">Donor:</span>
+                                                    <span className="text-gray-600">{item.name}</span>
                                                 </div>
-
-                                                <div className="bg-green-50 rounded-lg p-4">
-                                                    <p className="text-green-800 text-sm">
-                                                        Thank you for your generous donation! Your contribution is helping those affected by {item.disaster}.
-                                                    </p>
+                                                <div className="flex items-start">
+                                                    <span className="font-medium text-gray-700 w-20">Disaster:</span>
+                                                    <span className="text-gray-600">{item.disaster}</span>
                                                 </div>
+                                                {item.date && (
+                                                    <div className="flex items-start">
+                                                        <span className="font-medium text-gray-700 w-20">Date:</span>
+                                                        <span className="text-gray-600">{formatDate(item.date || new Date())}</span>
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                                                <div className="text-sm text-gray-500">
-                                                    Receipt: {item.receiptId}
-                                                </div>
+                                            <div className="bg-green-50 rounded-lg p-4">
+                                                <p className="text-green-800 text-sm">
+                                                    Thank you for your generous donation! Your contribution is helping those affected by {item.disaster}.
+                                                </p>
+                                            </div>
+
+                                            <div className="text-xs flex justify-between items-center mt-4">
+                                                <span className="text-gray-700">Receipt: {item.receiptId}</span>
                                                 <Link href="/donate" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
                                                     Donate again →
                                                 </Link>
@@ -445,58 +419,113 @@ export default function PanelPage() {
                                 // Emergency and Support requests
                                 return (
                                     <div key={requestId} className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${borderColor}`}>
-                                        <div className="p-6">
-                                            <div className="flex justify-between items-start mb-5">
-                                                <div className="flex items-center">
-                                                    <div className={`h-3 w-3 rounded-full ${statusColor} mr-3`}></div>
-                                                    <h3 className="font-semibold text-xl text-gray-900">{item.requestId}</h3>
-                                                </div>
-                                                <div className={`text-sm px-3 py-1 rounded-full font-medium ${statusTextColor} bg-opacity-20`} style={{backgroundColor: `${statusColor}25`}}>
-                                                    {item.status || 'Pending'}
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                                <div className="space-y-3">
+                                        <div className="p-4 flex flex-col lg:flex-row">
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start mb-3">
                                                     <div className="flex items-center">
-                                                        <span className="font-medium text-gray-700 w-28">Requester:</span>
+                                                        <h3 className="font-semibold text-gray-900 text-sm">{item.requestId}</h3>
+                                                    </div>
+                                                    <div className={`text-sm px-3 py-1 rounded-full font-medium ${statusColor}`}>
+                                                        {item.status || 'Pending'}
+                                                    </div>
+                                                </div>
+
+                                                <hr className="border-t border-gray-200 my-3" />
+
+                                                <div className="mb-3 space-y-1 text-xs">
+                                                    <div className="flex items-start">
+                                                        <span className="font-medium text-gray-700 w-20">Requester:</span>
                                                         <span className="text-gray-600">{item.name}</span>
                                                     </div>
                                                     {item.type && (
-                                                        <div className="flex items-center">
-                                                            <span className="font-medium text-gray-700 w-28">Type:</span>
+                                                        <div className="flex items-start">
+                                                            <span className="font-medium text-gray-700 w-20">Type:</span>
                                                             <span className="text-gray-600">{item.type}</span>
                                                         </div>
                                                     )}
                                                     {item.createdAt && (
-                                                        <div className="flex items-center">
-                                                            <span className="font-medium text-gray-700 w-28">Created:</span>
+                                                        <div className="flex items-start">
+                                                            <span className="font-medium text-gray-700 w-20">Created:</span>
                                                             <span className="text-gray-600">{formatDate(item.createdAt)}</span>
                                                         </div>
                                                     )}
                                                     {item.location && (
-                                                        <div className="flex items-center">
-                                                            <span className="font-medium text-gray-700 w-28">Location:</span>
+                                                        <div className="flex items-start">
+                                                            <span className="font-medium text-gray-700 w-20">Location:</span>
                                                             <span className="text-gray-600">{item.location}</span>
                                                         </div>
                                                     )}
+                                                    {activeSection === 'emergencies' && item.situation && (
+                                                        <div className="mt-2 p-2 bg-gray-50 rounded-md text-gray-700 text-xs">
+                                                            <div className="font-medium mb-1">Situation:</div>
+                                                            <p className="line-clamp-2">{item.situation}</p>
+                                                        </div>
+                                                    )}
+                                                    {activeSection === 'supports' && item.details && (
+                                                        <div className="mt-2 p-2 bg-gray-50 rounded-md text-gray-700 text-xs">
+                                                            <div className="font-medium mb-1">Details:</div>
+                                                            <p className="line-clamp-2">{item.details}</p>
+                                                        </div>
+                                                    )}
                                                 </div>
+                                            </div>
 
-                                                {item.details && (
-                                                    <div className="mt-3 p-3 bg-gray-50 rounded-md text-gray-700 text-sm">
-                                                        <div className="font-medium mb-1">Details:</div>
-                                                        <p className="line-clamp-2">{item.details}</p>
+                                            <div className="lg:ml-6 lg:pl-6 lg:border-l border-gray-200 flex-shrink-0 w-full lg:w-auto mt-4 lg:mt-0">
+                                                {assignee ? (
+                                                    <div className="text-center lg:text-left">
+                                                        {assignee.image ? (
+                                                            <Image
+                                                                src={assignee.image}
+                                                                alt={assignee.name || 'Assignee'}
+                                                                width={64}
+                                                                height={64}
+                                                                className="h-16 w-16 mx-auto lg:mx-0 rounded-full object-cover"
+                                                                onError={() => (
+                                                                    <div className="h-16 w-16 mx-auto lg:mx-0 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
+                                                                        {assignee.name?.charAt(0) || 'A'}
+                                                                    </div>
+                                                                )}
+                                                            />
+                                                        ) : (
+                                                            <div className="h-16 w-16 mx-auto lg:mx-0 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
+                                                                {assignee.name?.charAt(0) || 'A'}
+                                                            </div>
+                                                        )}
+                                                        <div className="mt-3">
+                                                            <p className="text-sm font-medium text-gray-900">Handled by</p>
+                                                            <p className="text-gray-600">{assignee.name || 'Unknown'}</p>
+                                                            <button
+                                                                onClick={() => handleCall(assignee.phone)}
+                                                                className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                                                disabled={!assignee.phone}
+                                                            >
+                                                                <Phone className="w-4 h-4 mr-2" />
+                                                                <span className="lg:inline-block hidden">
+                                                                    Call Assignee
+                                                                </span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center lg:text-left">
+                                                        <div className="h-16 w-16 mx-auto lg:mx-0 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
+                                                            ?
+                                                        </div>
+                                                        <div className="mt-3">
+                                                            <p className="text-sm font-medium text-gray-900">Handled by</p>
+                                                            <p className="text-gray-600">No assignee assigned</p>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
 
-                                        <div className="px-5 py-3 bg-gray-50 flex justify-between items-center">
+                                        <div className="px-4 py-3 bg-gray-50 flex justify-between items-center">
                                             <div className="text-xs text-gray-500">
                                                 Reference: {item.requestId}
                                             </div>
                                             <Link
-                                                href={activeSection === 'emergencies' ? "/get-help" : "/get-help"}
+                                                href={activeSection === 'emergencies' ? '/get-help' : '/get-help'}
                                                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                                             >
                                                 {activeSection === 'emergencies' ? 'Request again' : 'Raise request again'}
