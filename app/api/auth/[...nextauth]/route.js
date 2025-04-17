@@ -29,6 +29,8 @@ export const authOptions = {
                         email: user.email,
                         name: user.name,
                         image: user.image,
+                        userId: `USER-${Math.random().toString(36).substr(2, 9)}`, // Generate userId for new users
+                        role: "user", // Default role for new users
                         isProfileComplete: false,
                         createdAt: new Date(),
                     });
@@ -45,10 +47,11 @@ export const authOptions = {
                 await dbConnect();
                 const dbUser = await User.findOne({ email: user.email });
                 if (dbUser) {
+                    token.userId = dbUser.userId || dbUser._id.toString();
+                    token.role = dbUser.role; // Add role to token
                     token.isProfileComplete = dbUser.isProfileComplete;
-                    token.userId = dbUser.userId || dbUser._id.toString(); // Use userId if exists, fallback to _id
                     token.name = dbUser.name;
-                    token.email = dbUser.email; // Ensure email is in token
+                    token.email = dbUser.email;
                     token.image = dbUser.image;
                 }
             }
@@ -57,10 +60,11 @@ export const authOptions = {
         async session({ session, token }) {
             if (session.user) {
                 console.log("Session callback for:", session.user.email);
+                session.user.userId = token.userId;
+                session.user.role = token.role; // Add role to session
                 session.user.isProfileComplete = token.isProfileComplete;
-                session.user.userId = token.userId; // Use userId instead of id
                 session.user.name = token.name;
-                session.user.email = token.email; // Ensure email is in session
+                session.user.email = token.email;
                 session.user.image = token.image;
             }
             return session;

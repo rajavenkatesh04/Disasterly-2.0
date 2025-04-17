@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { dbConnect } from "@/lib/mongodb/connection";
 import User from "@/lib/mongodb/models/User";
 
 export async function POST(req) {
     try {
-        // Get current session
         const session = await getServerSession(authOptions);
-
-        // Check if user is authenticated
         if (!session?.user?.email) {
             return NextResponse.json(
                 { error: "Unauthorized" },
@@ -17,19 +14,14 @@ export async function POST(req) {
             );
         }
 
-        // Parse request body
         const formData = await req.json();
-        console.log("Received profile data:", formData); // Debug log to see incoming data
+        console.log("Received profile data:", formData);
 
-        // Connect to database using mongoose
         await dbConnect();
 
-        // Generate unique USER-XXXXXX ID
-        const timestamp = Date.now().toString(36); // Base36 timestamp
-        const random = Math.random().toString(36).substr(2, 5); // 5 random chars
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substr(2, 5);
         let userId = `USER-${timestamp}-${random}`;
-
-        // Check for uniqueness using mongoose
         let isUnique = false;
         let attempt = 0;
         const maxAttempts = 5;
@@ -46,7 +38,6 @@ export async function POST(req) {
 
         if (!isUnique) return NextResponse.json({ error: "Failed to generate unique ID" }, { status: 500 });
 
-        // Validate dateOfBirth
         const dateOfBirth = formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined;
         if (formData.dateOfBirth && isNaN(dateOfBirth)) {
             return NextResponse.json(
@@ -55,15 +46,15 @@ export async function POST(req) {
             );
         }
 
-        // Update user profile with ALL form fields using the mongoose model
         try {
             const updatedUser = await User.findOneAndUpdate(
                 { email: session.user.email },
                 {
-                    name: formData.name || session.user.name, // Prioritize form data, fallback to session
-                    image: session.user.image, // Preserve Google image
+                    name: formData.name || session.user.name,
+                    image: session.user.image,
                     gender: formData.gender,
                     dateOfBirth: dateOfBirth,
+                    age: formData.age,
                     phone: formData.phone,
                     address: {
                         street: formData.address?.street,
@@ -85,14 +76,11 @@ export async function POST(req) {
                 message: "Profile updated successfully",
                 isProfileComplete: true,
                 user: updatedUser,
-                userId: userId // Explicitly include userId in the response
+                userId: userId
             });
         } catch (mongooseError) {
             console.error("Mongoose update failed:", mongooseError);
-
-            // If user wasn't found with the mongoose model, try alternative approach
             try {
-                // Use the mongoose connection to access the collection directly
                 const collection = mongoose.connection.collection('users');
                 const result = await collection.findOneAndUpdate(
                     { email: session.user.email },
@@ -102,6 +90,7 @@ export async function POST(req) {
                             image: session.user.image,
                             gender: formData.gender,
                             dateOfBirth: dateOfBirth,
+                            age: formData.age,
                             phone: formData.phone,
                             address: {
                                 street: formData.address?.street,

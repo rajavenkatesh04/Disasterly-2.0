@@ -6,15 +6,16 @@ export async function middleware(req) {
     const { pathname } = req.nextUrl;
 
     console.log("🔍 Middleware - Checking:", pathname);
-    console.log("🔑 Token:", !!token);
+    console.log("🔑 Token exists:", !!token);
+    console.log("🔑 Token role:", token?.role);
 
     // Allow public and auth-related routes
     if (pathname.startsWith("/api/auth") || pathname === "/signin" || pathname === "/complete-profile") {
         return NextResponse.next();
     }
 
-    // Protect all routes under /panel, /dashboard, /profile, /settings
-    if (pathname.startsWith("/panel") || pathname.startsWith("/dashboard") || pathname.startsWith("/personnel") || pathname.startsWith("/settings")) {
+    // Protect all routes under /panel, /dashboard, /settings
+    if (pathname.startsWith("/panel") || pathname.startsWith("/dashboard") || pathname.startsWith("/settings")) {
         if (!token) {
             console.log("❌ No token, redirecting to signin...");
             const url = new URL("/signin", req.url);
@@ -25,12 +26,34 @@ export async function middleware(req) {
         if (token && !token.isProfileComplete && pathname !== "/complete-profile") {
             console.log("⚠️ Profile incomplete, redirecting to complete-profile...");
             const url = new URL("/complete-profile", req.url);
-            url.searchParams.set("callbackUrl", encodeURIComponent("/")); // Force callback to homepage
+            url.searchParams.set("callbackUrl", encodeURIComponent("/"));
             return NextResponse.redirect(url);
         }
     }
 
-    // Allow unmatched routes to proceed (Next.js will handle 404)
+    // Special protection for personnel panel - requires admin role
+    if (pathname.startsWith("/personnel")) {
+        if (!token) {
+            console.log("❌ No token, redirecting to signin...");
+            const url = new URL("/signin", req.url);
+            url.searchParams.set("callbackUrl", encodeURIComponent(req.url));
+            return NextResponse.redirect(url);
+        }
+
+        const allowedRoles = ['admin'];
+        if (!token.role || !allowedRoles.includes(token.role)) {
+            console.log("🚫 Unauthorized role, redirecting to homepage...");
+            return NextResponse.redirect(new URL("/", req.url));
+        }
+
+        if (token && !token.isProfileComplete && pathname !== "/complete-profile") {
+            console.log("⚠️ Profile incomplete, redirecting to complete-profile...");
+            const url = new URL("/complete-profile", req.url);
+            url.searchParams.set("callbackUrl", encodeURIComponent("/"));
+            return NextResponse.redirect(url);
+        }
+    }
+
     return NextResponse.next();
 }
 

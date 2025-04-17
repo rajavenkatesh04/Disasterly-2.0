@@ -31,7 +31,7 @@ export async function POST(request) {
             return Response.json({
                 success: true,
                 mongoId: result.insertedId.toString(), // Return the actual MongoDB ID
-                formattedId: `HELP-${result.insertedId.toString().slice(-8).toUpperCase()}` // Pre-formatted display ID
+                formattedId: `VOLUNTEER-${result.insertedId.toString().slice(-8).toUpperCase()}` // Pre-formatted display ID
             });
 
         } finally {
