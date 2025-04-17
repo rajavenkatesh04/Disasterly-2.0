@@ -42,8 +42,15 @@ export async function middleware(req) {
 
         const allowedRoles = ['admin'];
         if (!token.role || !allowedRoles.includes(token.role)) {
-            console.log("🚫 Unauthorized role, redirecting to homepage...");
-            return NextResponse.redirect(new URL("/", req.url));
+            const urlParams = new URLSearchParams(req.url.split("?")[1]);
+            if (!urlParams.get("unauthorized")) { // Prevent redirect loop
+                console.log("🚫 Unauthorized role detected for user:", token.email);
+                console.log("🚫 Current role:", token.role);
+                console.log("🚫 Redirecting to personnel page with unauthorized flag...");
+                const url = new URL("/personnel", req.url);
+                url.searchParams.set("unauthorized", "true");
+                return NextResponse.redirect(url);
+            }
         }
 
         if (token && !token.isProfileComplete && pathname !== "/complete-profile") {

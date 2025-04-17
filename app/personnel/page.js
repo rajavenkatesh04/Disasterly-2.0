@@ -290,7 +290,7 @@ export default function PersonnelPage() {
     const [loading, setLoading] = useState(true);
     const [timeUpdate, setTimeUpdate] = useState(0);
     const [isAuthorized, setIsAuthorized] = useState(false);
-    const [countdown, setCountdown] = useState(3);
+    const [countdown, setCountdown] = useState(5);
     const [badgeStates, setBadgeStates] = useState({});
     const [assigneeUpdatingStates, setAssigneeUpdatingStates] = useState({});
 
@@ -298,47 +298,48 @@ export default function PersonnelPage() {
 
     // Authorization check using session data
     useEffect(() => {
+        let timer;
         const checkUserRole = async () => {
             try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const isUnauthorized = urlParams.get('unauthorized') === 'true';
+
+                console.log("🔍 URL params:", Object.fromEntries(urlParams.entries()));
+                console.log("🔍 Unauthorized flag detected:", isUnauthorized);
+
+                if (isUnauthorized) {
+                    console.log("🚫 User unauthorized, redirecting to noaccess page...");
+                    setTimeout(() => {
+                        router.push('/noaccess');
+                    }, 0);
+                    return;
+                }
+
                 const response = await fetch('/api/auth/session');
                 if (!response.ok) throw new Error('Failed to fetch session');
-
                 const session = await response.json();
                 console.log("🔍 Session data:", session);
 
                 if (!session || !session.user) {
                     console.log("❌ No session or user, redirecting to signin...");
-                    router.push('/signin?callbackUrl=/personnel');
+                    setTimeout(() => {
+                        router.push('/signin?callbackUrl=/personnel');
+                    }, 0);
                     return;
                 }
 
                 const userData = session.user;
                 setCurrentUser(userData);
-
-                if (userData.role === 'admin') {
-                    setIsAuthorized(true);
-                } else {
-                    console.log("🚫 User role not admin, redirecting to homepage...");
-                    setIsAuthorized(false);
-                    const timer = setInterval(() => {
-                        setCountdown(prev => {
-                            if (prev <= 1) {
-                                clearInterval(timer);
-                                router.push('/');
-                                return 0;
-                            }
-                            return prev - 1;
-                        });
-                    }, 1000);
-                    return () => clearInterval(timer);
-                }
+                setIsAuthorized(userData.role === 'admin');
             } catch (error) {
                 console.error("Error checking authorization:", error);
-                router.push('/signin?callbackUrl=/personnel');
+                setTimeout(() => {
+                    router.push('/signin?callbackUrl=/personnel');
+                }, 0);
             }
         };
-
         checkUserRole();
+        return () => clearInterval(timer);
     }, [router]);
 
     // Fetch data if authorized
@@ -388,7 +389,6 @@ export default function PersonnelPage() {
                     };
                 });
 
-                // Check for duplicate requestIds
                 const requestIds = mergedVolunteers.map(v => v.requestId);
                 const duplicates = requestIds.filter((id, index) => requestIds.indexOf(id) !== index);
                 if (duplicates.length > 0) {
@@ -494,16 +494,12 @@ export default function PersonnelPage() {
         }
     };
 
-    if (!isAuthorized && !loading) {
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center p-8 bg-white rounded-xl shadow-md max-w-md">
-                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Unauthorized Role</h1>
-                    <p className="text-gray-600 mb-6">Redirecting to homepage in {countdown} seconds...</p>
-                    <Link href="/" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-                        Return to Home
-                    </Link>
+                    <AlertCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Loading...</h1>
                 </div>
             </div>
         );
