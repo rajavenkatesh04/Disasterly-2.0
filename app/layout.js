@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata = {
     title: "Disasterly",
@@ -23,6 +24,7 @@ export default function RootLayout({ children }) {
         <body>
         <Providers>
             {children}
+            <Analytics />
         </Providers>
         </body>
         </html>
