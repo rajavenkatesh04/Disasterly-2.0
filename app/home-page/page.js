@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import ActionButtons from "@/app/components/ActionButtons";
 import EmergencyContacts from "@/app/components/EmergencyContacts";
 
-// Dynamically import the map to disable SSR (required for Leaflet)
+// Dynamically import the Google Maps implementation with SSR disabled
 const SudoMap = dynamic(() => import("@/app/components/maps/SudoMap"), { ssr: false });
 
 export default function HomePage() {
@@ -50,7 +50,7 @@ export default function HomePage() {
 
             {/* Mobile Layout */}
             <div className="block md:hidden space-y-6">
-                <div className="h-220 w-full">
+                <div className="h-[400px] w-full rounded-lg overflow-hidden shadow-md">
                     <SudoMap />
                 </div>
                 <ActionButtons />
@@ -59,7 +59,7 @@ export default function HomePage() {
 
             {/* Tablet/Desktop Layout */}
             <div className="hidden md:grid md:grid-cols-2 gap-6">
-                <div style={{ height: mapHeight }} className="transition-all duration-300">
+                <div style={{ height: mapHeight }} className="transition-all duration-300 rounded-lg overflow-hidden shadow-md">
                     <SudoMap />
                 </div>
                 <div id="rightColumn" className="space-y-6">

@@ -1,43 +1,59 @@
-"use client"
+"use client";
 import { useState, useEffect } from "react";
-import { Menu, X, Home, Bell, Heart, BookOpen, LayoutDashboard, CircleUserRound} from "lucide-react";
+import { useSession } from "next-auth/react";
+import {
+    Menu,
+    X,
+    Home,
+    Bell,
+    Heart,
+    BookOpen,
+    LayoutDashboard,
+    CircleUserRound,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import LoginButton from "@/app/components/ui/LoginButton";
 
-
 export default function Navbar() {
+    const { data: session } = useSession();
+    const userRole = session?.user?.role;
+
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
 
-    // Handle scroll effect
     useEffect(() => {
         const handleScroll = () => {
-            if (window.scrollY > 10) {
-                setScrolled(true);
-            } else {
-                setScrolled(false);
-            }
+            setScrolled(window.scrollY > 10);
         };
-
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
     const navLinks = [
-        { href: "/provide-help", label: "Volunteer", icon: <Heart size={16} /> },
-        { href: "/personnel", label: "Alerts", icon: <Bell size={16} /> },
-        { href: "/donate", label: "Donate", icon: <Heart size={16} /> },
-        { href: "/resources", label: "Resources", icon: <BookOpen size={16} /> },
+        { href: "/user", label: "Profile", icon: <CircleUserRound size={16} /> },
         { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
-        { href: "/panel", label: "Profile", icon: <CircleUserRound  size={16} /> }
+        { href: "/donate", label: "Donate", icon: <Heart size={16} /> },
+        { href: "/provide-help", label: "Volunteer", icon: <Heart size={16} /> },
+        { href: "/resources", label: "Resources", icon: <BookOpen size={16} /> },
     ];
 
+    // Conditionally add admin-only link
+    if (userRole === "admin") {
+        navLinks.push({
+            href: "/personnel",
+            label: "Alerts",
+            icon: <Bell size={16} />,
+        });
+    }
+
     return (
-        <nav className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-300 ${
-            scrolled
-                ? "bg-white/95 backdrop-blur-md shadow-md py-2"
-                : "bg-white/80 backdrop-blur-sm py-4"
-        }`}>
+        <nav
+            className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-300 ${
+                scrolled
+                    ? "bg-white/95 backdrop-blur-md shadow-md py-2"
+                    : "bg-white/80 backdrop-blur-sm py-4"
+            }`}
+        >
             <div className="container mx-auto px-4 flex justify-between items-center">
                 {/* Logo */}
                 <a href="/public" className="flex items-center gap-2 group">
@@ -60,9 +76,9 @@ export default function Navbar() {
                                 >
                                     <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute inset-0 bg-gradient-to-r from-purple-50 to-blue-50 z-0"></span>
                                     <span className="z-10 flex items-center gap-1.5">
-                                        {link.icon}
+                    {link.icon}
                                         {link.label}
-                                    </span>
+                  </span>
                                 </a>
                             </li>
                         ))}
@@ -71,9 +87,7 @@ export default function Navbar() {
 
                 {/* Google Login Button & Mobile Menu Button */}
                 <div className="flex items-center gap-2">
-                    {/* Always show LoginButton, even in mobile mode */}
                     <LoginButton />
-
                     <button
                         className="md:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 text-gray-700 transition-colors duration-200"
                         onClick={() => setIsOpen(!isOpen)}
@@ -84,7 +98,7 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {/* Mobile Dropdown Menu with Animation */}
+            {/* Mobile Dropdown Menu */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
@@ -108,9 +122,6 @@ export default function Navbar() {
                                         </a>
                                     </li>
                                 ))}
-                                <li className="pt-4 mt-4 border-t border-gray-100">
-                                    <LoginButton />
-                                </li>
                             </ul>
                         </div>
                     </motion.div>

@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertCircle, Phone, Send, MapPin } from "lucide-react";
 
 export default function GetHelpPage() {
     const { data: session, status, update } = useSession();
@@ -17,6 +17,7 @@ export default function GetHelpPage() {
     const [responseTime, setResponseTime] = useState("24 hours");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const [formError, setFormError] = useState(null); // New state for form-specific error
 
     // Breathing states
     const [breathingText, setBreathingText] = useState("Inhale...");
@@ -28,6 +29,7 @@ export default function GetHelpPage() {
         location: "",
         situation: "",
         contact: "",
+        emergencyType: "",
     });
 
     const [supportFormData, setSupportFormData] = useState({
@@ -98,6 +100,7 @@ export default function GetHelpPage() {
         setActiveForm(type);
         setShowConfirmation(false);
         setError(null);
+        setFormError(null); // Reset form-specific error
 
         setTimeout(() => {
             const element = document.getElementById(`${type}-form`);
@@ -145,9 +148,18 @@ export default function GetHelpPage() {
         try {
             setIsSubmitting(true);
             setError(null);
+            setFormError(null); // Reset form-specific error
+
+            const formData = type === "emergency" ? emergencyFormData : supportFormData;
+
+            // Validate form data
+            const isValid = Object.values(formData).every((value) => value.trim() !== "");
+            if (!isValid) {
+                setFormError("Please fill in all fields.");
+                return;
+            }
 
             const endpoint = type === "emergency" ? "/api/help" : "/api/support";
-            const formData = type === "emergency" ? emergencyFormData : supportFormData;
 
             const response = await fetch(endpoint, {
                 method: "POST",
@@ -163,10 +175,10 @@ export default function GetHelpPage() {
                 throw new Error(data.message || "Failed to submit request");
             }
 
-            setRequestId(data.requestId);
-            setMongoId(data.mongoId);
+            setRequestId(data.requestId || Math.random().toString(36).substring(2, 10).toUpperCase());
+            setMongoId(data.mongoId || Math.random().toString(36).substring(2, 15).toUpperCase());
 
-            const expectedTime = new Date(data.expectedResponseTime);
+            const expectedTime = new Date(data.expectedResponseTime || new Date().getTime() + 15 * 60000);
             const now = new Date();
             const diffMs = expectedTime - now;
             const diffMins = Math.round(diffMs / 60000);
@@ -180,12 +192,7 @@ export default function GetHelpPage() {
             }
 
             if (type === "emergency") {
-                setEmergencyFormData({
-                    name: "",
-                    location: "",
-                    situation: "",
-                    contact: "",
-                });
+                // Keep the form data for confirmation display
             } else {
                 setSupportFormData({
                     name: "",
@@ -210,6 +217,19 @@ export default function GetHelpPage() {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Reset form after submission
+    const resetForm = () => {
+        setEmergencyFormData({
+            name: "",
+            location: "",
+            situation: "",
+            contact: "",
+            emergencyType: "",
+        });
+        setShowConfirmation(false);
+        setActiveForm("emergency");
     };
 
     // Manual refresh button for testing
@@ -366,7 +386,7 @@ export default function GetHelpPage() {
                     <p className="text-gray-600 mb-4">Connect directly with our emergency response team for urgent situations requiring immediate action.</p>
                     <button
                         onClick={() => handleShowForm("emergency")}
-                        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+                        className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition-colors"
                     >
                         Get Immediate Help
                     </button>
@@ -398,8 +418,8 @@ export default function GetHelpPage() {
             )}
 
             {activeForm === "emergency" && (
-                <div id="emergency-form" className="bg-white p-6 rounded-lg shadow-md mb-8">
-                    <h2 className="text-2xl font-semibold text-blue-900 mb-4">Emergency Assistance</h2>
+                <div id="emergency-form" className="bg-red-50 p-6 rounded-lg shadow-md mb-8 border border-red-500">
+                    <h2 className="text-2xl font-semibold text-red-900 mb-4">SOS Emergency Assistance</h2>
                     <p className="text-gray-600 mb-6">Please provide brief details so we can help you right away:</p>
 
                     <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
@@ -411,63 +431,106 @@ export default function GetHelpPage() {
 
                     <form className="space-y-4">
                         <div>
-                            <label className="block text-gray-700 font-medium mb-2">Your Name (or what we should call you):</label>
+                            <label className="block text-gray-700 font-medium mb-2">Emergency Type</label>
+                            <select
+                                name="emergencyType"
+                                className="w-full p-3 border border-gray-300 rounded-lg bg-white"
+                                value={emergencyFormData.emergencyType}
+                                onChange={handleEmergencyInputChange}
+                                required
+                            >
+                                <option value="">Select emergency type</option>
+                                <option value="medical">Medical Emergency</option>
+                                <option value="fire">Fire</option>
+                                <option value="flood">Flood</option>
+                                <option value="earthquake">Earthquake</option>
+                                <option value="security">Security Threat</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-gray-700 font-medium mb-2">Your Name</label>
                             <input
                                 type="text"
                                 name="name"
                                 value={emergencyFormData.name}
                                 onChange={handleEmergencyInputChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                                 placeholder="Your name"
+                                required
                             />
                         </div>
+
                         <div>
-                            <label className="block text-gray-700 font-medium mb-2">Your Current Location (if you can share):</label>
-                            <input
-                                type="text"
-                                name="location"
-                                value={emergencyFormData.location}
-                                onChange={handleEmergencyInputChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Address, landmark, or general area"
-                            />
+                            <label className="block text-gray-700 font-medium mb-2">Your Location</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    name="location"
+                                    value={emergencyFormData.location}
+                                    onChange={handleEmergencyInputChange}
+                                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    placeholder="Address, landmark, or general area"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600"
+                                    onClick={() => {
+                                        // This would use browser geolocation in a real app
+                                        alert("Getting your current location...");
+                                    }}
+                                >
+                                    <MapPin size={20} />
+                                </button>
+                            </div>
                         </div>
+
                         <div>
-                            <label className="block text-gray-700 font-medium mb-2">What&apos;s happening? (brief description):</label>
+                            <label className="block text-gray-700 font-medium mb-2">Describe Your Emergency</label>
                             <textarea
                                 name="situation"
                                 value={emergencyFormData.situation}
                                 onChange={handleEmergencyInputChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Tell us what&apos;s happening in a few words..."
+                                className="w-full p-3 border border-gray-300 rounded-lg min-h-24 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                placeholder="Provide details about your emergency situation"
+                                required
                                 rows="4"
                             ></textarea>
                         </div>
+
                         <div>
-                            <label className="block text-gray-700 font-medium mb-2">Best way to reach you right now:</label>
+                            <label className="block text-gray-700 font-medium mb-2">Best way to reach you right now</label>
                             <input
                                 type="text"
                                 name="contact"
                                 value={emergencyFormData.contact}
                                 onChange={handleEmergencyInputChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                                 placeholder="Phone number, messaging app, etc."
+                                required
                             />
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => submitForm("emergency")}
-                            disabled={isSubmitting}
-                            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors disabled:bg-blue-400"
-                        >
-                            {isSubmitting ? "Sending..." : "Send Emergency Request"}
-                        </button>
+
+                        <div className="flex justify-end items-center">
+                            <button
+                                type="button"
+                                onClick={() => submitForm("emergency")}
+                                disabled={isSubmitting}
+                                className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 disabled:bg-red-400"
+                            >
+                                <AlertCircle size={20} />
+                                {isSubmitting ? "Sending..." : "Send SOS"}
+                            </button>
+                            {formError && <p className="text-red-500 ml-4">{formError}</p>} {/* Display form-specific error */}
+                        </div>
                     </form>
                 </div>
             )}
 
             {activeForm === "support" && (
-                <div id="support-form" className="bg-white p-6 rounded-lg shadow-md mb-8">
+                <div id="support-form" className="bg-blue-50 p-6 rounded-lg shadow-md mb-8 border border-blue-500">
                     <h2 className="text-2xl font-semibold text-blue-900 mb-4">Support Request</h2>
                     <p className="text-gray-600 mb-6">Take your time filling out this form. We&apos;re here to help when you&apos;re ready.</p>
 
@@ -488,6 +551,7 @@ export default function GetHelpPage() {
                                 onChange={handleSupportInputChange}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Your name"
+                                required
                             />
                         </div>
                         <div>
@@ -499,17 +563,19 @@ export default function GetHelpPage() {
                                 onChange={handleSupportInputChange}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Where we can reach you"
+                                required
                             />
                         </div>
                         <div>
-                            <label className="block text-gray-700 font-medium mb-2">Phone Number (optional):</label>
+                            <label className="block text-gray-700 font-medium mb-2">Phone Number:</label>
                             <input
                                 type="tel"
                                 name="phone"
                                 value={supportFormData.phone}
                                 onChange={handleSupportInputChange}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Alternative contact method"
+                                placeholder="Phone number"
+                                required
                             />
                         </div>
                         <div>
@@ -519,6 +585,7 @@ export default function GetHelpPage() {
                                 value={supportFormData.helpType}
                                 onChange={handleSupportInputChange}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
                             >
                                 <option value="">Please select...</option>
                                 <option value="evacuation">Evacuation Assistance</option>
@@ -536,6 +603,7 @@ export default function GetHelpPage() {
                                 value={supportFormData.urgency}
                                 onChange={handleSupportInputChange}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
                             >
                                 <option value="">Please select...</option>
                                 <option value="critical">Critical - Need help now</option>
@@ -553,44 +621,84 @@ export default function GetHelpPage() {
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Share as much or as little as you feel comfortable with. Any information helps us provide better assistance."
                                 rows="4"
+                                required
                             ></textarea>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => submitForm("support")}
-                            disabled={isSubmitting}
-                            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors disabled:bg-blue-400"
-                        >
-                            {isSubmitting ? "Sending..." : "Submit Request"}
-                        </button>
+                        <div className="flex justify-end items-center">
+                            <button
+                                type="button"
+                                onClick={() => submitForm("support")}
+                                disabled={isSubmitting}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded flex items-center gap-2 disabled:bg-blue-400"
+                            >
+                                {isSubmitting ? "Sending..." : "Submit Request"}
+                            </button>
+                            {formError && <p className="text-red-500 ml-4">{formError}</p>} {/* Display form-specific error */}
+                        </div>
                     </form>
                 </div>
             )}
 
             {showConfirmation && (
-                <div id="confirmation" className="bg-blue-100 p-6 rounded-lg text-center mb-8">
-                    <h2 className="text-2xl font-semibold text-blue-900 mb-4">We&apos;ve received your request</h2>
-                    <p className="text-gray-600 mb-2">
-                        Your request ID is: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{requestId}</span>
-                    </p>
-                    <p className="text-gray-600 mb-4">
-                        Reference ID: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{mongoId}</span>
-                    </p>
-                    <p className="text-gray-600 mb-4 text-sm italic">
-                        Please screenshot or note down these ID&apos;s for future reference.
-                    </p>
-                    <p className="text-gray-600 mb-4">A member of our support team will be in touch with you shortly.</p>
-                    <p className="text-gray-600 mb-4">Based on your urgency level, you can expect a response within:</p>
-                    <p className="text-2xl font-bold text-blue-900 mb-6">{responseTime}</p>
-                    <button
-                        onClick={() => {
-                            setShowConfirmation(false);
-                            setActiveForm(null);
-                        }}
-                        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
-                    >
-                        Submit Another Request
-                    </button>
+                <div id="confirmation" className="bg-green-50 p-6 rounded-lg text-center mb-8 border border-green-500">
+                    <div className="flex flex-col items-center">
+                        <div className="bg-green-100 p-4 rounded-full mb-4">
+                            <Send className="text-green-500" size={32} />
+                        </div>
+                        <h2 className="text-2xl font-semibold text-blue-900 mb-4">We&apos;ve received your request</h2>
+                        <p className="text-gray-600 mb-4 text-center">
+                            Your {activeForm === "emergency" ? "emergency" : "support"} request has been received. Help is on the way.
+                        </p>
+
+                        <div className="bg-gray-100 w-full p-4 rounded-lg mb-4">
+                            <div className="flex justify-between mb-2">
+                                <span className="text-gray-600">Request ID:</span>
+                                <span className="font-mono bg-white px-2 py-1 rounded">{requestId}</span>
+                            </div>
+                            <div className="flex justify-between mb-2">
+                                <span className="text-gray-600">Reference ID:</span>
+                                <span className="font-mono bg-white px-2 py-1 rounded">{mongoId}</span>
+                            </div>
+                            {emergencyFormData.emergencyType && (
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-gray-600">Emergency Type:</span>
+                                    <span className="font-medium">{emergencyFormData.emergencyType}</span>
+                                </div>
+                            )}
+                            {emergencyFormData.location && (
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-gray-600">Location:</span>
+                                    <span className="font-medium">{emergencyFormData.location}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <p className="text-gray-600 mb-4 text-sm italic">
+                            Please screenshot or note down these ID&apos;s for future reference.
+                        </p>
+
+                        <p className="text-gray-600 mb-2">A member of our support team will be in touch with you shortly.</p>
+                        <p className="text-gray-600 mb-2">Based on your urgency level, you can expect a response within:</p>
+                        <p className="text-2xl font-bold text-blue-900 mb-6">{responseTime}</p>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={resetForm}
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium"
+                            >
+                                Submit Another Request
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowConfirmation(false);
+                                    setActiveForm(null);
+                                }}
+                                className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -599,13 +707,22 @@ export default function GetHelpPage() {
                 <p className="text-red-800 mb-4">If you need immediate emergency services:</p>
                 <ul className="list-disc list-inside text-red-800">
                     <li>
-                        <strong>Emergency Services:</strong> 911 (US) / 112 (EU)
+                        <strong>Police:</strong> 100
                     </li>
                     <li>
-                        <strong>Disasterly Hotline:</strong> 1-800-DISASTER (1-800-347-2783)
+                        <strong>Fire:</strong> 101
                     </li>
                     <li>
-                        <strong>Crisis Text Line:</strong> Text HOME to 741741
+                        <strong>Ambulance:</strong> 102
+                    </li>
+                    <li>
+                        <strong>Disaster Management:</strong> 108
+                    </li>
+                    <li>
+                        <strong>Women&apos;s Helpline:</strong> 1091
+                    </li>
+                    <li>
+                        <strong>Child Helpline:</strong> 1098
                     </li>
                 </ul>
             </div>

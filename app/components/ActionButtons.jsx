@@ -33,15 +33,15 @@ export default function ActionButtons() {
             href: "/donate",
             description: "Financial contributions"
         },
-        {
-            label: "SOS",
-            number: "Emergency assistance",
-            gradient: "from-rose-100 to-rose-200",
-            hoverGradient: "from-rose-200 to-rose-300",
-            icon: <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" />,
-            href: "/sos",
-            description: "Urgent help needed"
-        },
+        // {
+        //     label: "SOS",
+        //     number: "Emergency assistance",
+        //     gradient: "from-rose-100 to-rose-200",
+        //     hoverGradient: "from-rose-200 to-rose-300",
+        //     icon: <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" />,
+        //     href: "/sos",
+        //     description: "Urgent help needed"
+        // },
     ];
 
     return (

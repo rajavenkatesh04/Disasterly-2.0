@@ -14,8 +14,8 @@ export async function middleware(req) {
         return NextResponse.next();
     }
 
-    // Protect all routes under /panel, /dashboard, /settings
-    if (pathname.startsWith("/panel") || pathname.startsWith("/dashboard") || pathname.startsWith("/settings")) {
+    // Protect all routes under /user, /dashboard, /settings
+    if (pathname.startsWith("/user") || pathname.startsWith("/dashboard") || pathname.startsWith("/settings")) {
         if (!token) {
             console.log("❌ No token, redirecting to signin...");
             const url = new URL("/signin", req.url);
@@ -31,7 +31,7 @@ export async function middleware(req) {
         }
     }
 
-    // Special protection for personnel panel - requires admin role
+    // Special protection for personnel user - requires admin role
     if (pathname.startsWith("/personnel")) {
         if (!token) {
             console.log("❌ No token, redirecting to signin...");

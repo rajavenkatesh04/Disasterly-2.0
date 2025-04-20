@@ -75,7 +75,7 @@ function SignInContent({ callbackUrl }) {
 }
 
 export default function SignInPage() {
-    const callbackUrl = "/"; // Hardcoded to default to /panel
+    const callbackUrl = "/"; // Hardcoded to default to /user
 
     return (
         <Suspense fallback={<div className="min-h-screen flex justify-center items-center">Loading...</div>}>
