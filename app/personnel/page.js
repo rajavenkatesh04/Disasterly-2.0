@@ -442,7 +442,7 @@ export default function PersonnelPage() {
                         case 'volunteers': {
                             const usersData = await fetch('/api/users?all=true').then(res => res.json());
                             const mergedVolunteers = updatedData.map((volunteer, index) => {
-                                const matchingUser = usersData.find(user => user.email === volunteer.email);
+                                const matchingUser = usersData.find(user => user.email === user.email);
                                 if (matchingUser) {
                                     return {
                                         ...matchingUser,
@@ -658,7 +658,8 @@ export default function PersonnelPage() {
                                 const assigneeUser = item.assignee ? adminUsers.find(user => user.userId === item.assignee) : null;
                                 const takenBy = assigneeUser ? assigneeUser.name : item.assignee ? 'Unknown User' : 'Unassigned';
 
-                                const userPhone = item.phone || 'N/A';
+                                const userPhone = activeSection === 'emergencies' ? item.contact : item.phone || 'N/A';
+                                const requesterName = item.name || 'N/A';
                                 const requestId = item.requestId || item.receiptId || item.userId || `item-${index}`;
                                 const status = item.status?.toLowerCase() || 'pending';
                                 const isDonation = activeSection === 'donations';
@@ -870,6 +871,24 @@ export default function PersonnelPage() {
                                                                 <span className="text-gray-600">{item.location}</span>
                                                             </div>
                                                         )}
+                                                        {isDonation && item.amount && (
+                                                            <div className="flex items-start">
+                                                                <span className="font-medium text-gray-700 w-20">Amount:</span>
+                                                                <span className="text-gray-600">₹{item.amount}</span>
+                                                            </div>
+                                                        )}
+                                                        {isDonation && item.cardNumber && (
+                                                            <div className="flex items-start">
+                                                                <span className="font-medium text-gray-700 w-20">Card:</span>
+                                                                <span className="text-gray-600">{item.cardNumber}</span>
+                                                            </div>
+                                                        )}
+                                                        {isDonation && item.transactionId && (
+                                                            <div className="flex items-start">
+                                                                <span className="font-medium text-gray-700 w-20">Transaction ID:</span>
+                                                                <span className="text-gray-600">{item.transactionId}</span>
+                                                            </div>
+                                                        )}
                                                         {(item.details || (activeSection === 'emergencies' && item.situation)) && (
                                                             <div className="mt-2 p-2 bg-gray-50 rounded-md text-gray-700 text-xs">
                                                                 <div className="font-medium mb-1">Details:</div>
@@ -883,12 +902,17 @@ export default function PersonnelPage() {
                                             <hr className="border-t border-gray-200 my-3" />
 
                                             <div className="text-xs flex justify-between items-center">
-                                                <span className="text-gray-700">{item.phone || 'N/A'}</span>
+                                                <div>
+                                                    <span className="text-gray-700">{userPhone}</span>
+                                                    {(activeSection === 'emergencies' || activeSection === 'supports') && (
+                                                        <span className="text-gray-700 ml-2">({requesterName})</span>
+                                                    )}
+                                                </div>
                                                 {!isDonation && (
                                                     <button
-                                                        onClick={() => handleCall(item.phone || 'N/A')}
+                                                        onClick={() => handleCall(userPhone)}
                                                         className={`bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${isDonation ? 'hidden' : ''}`}
-                                                        disabled={!item.phone}
+                                                        disabled={!userPhone || userPhone === 'N/A'}
                                                     >
                                                         <Phone className={`w-4 h-4 mr-2 ${isDonation ? 'hidden' : ''}`} />
                                                         <span className="lg:inline-block hidden">Call {isUser ? 'User' : isVolunteer ? 'Volunteer' : 'Requester'}</span>

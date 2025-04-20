@@ -478,8 +478,7 @@ export default function PanelPage() {
                                 )}
                                 <div className="mt-4 w-full max-w-xs">
                                     <div className="bg-indigo-50 p-4 rounded-lg text-center">
-                                        <h3 className="font-medium text-indigo-700 text-sm">Member Since</h3>
-                                        <p className="text-indigo-900 mt-1">January 2024</p>
+                                        <p className="text-indigo-900 mt-1">Please note DP can&apos;t be changed as its linked to your google account.</p>
                                     </div>
                                 </div>
                             </div>

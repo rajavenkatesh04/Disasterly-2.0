@@ -1,9 +1,10 @@
+// File: @/app/api/auth/[...nextauth]/route.js
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { dbConnect } from "@/lib/mongodb/connection";
 import User from "@/lib/mongodb/models/User";
 
-const authOptions = {
+export const authOptions = {
     providers: [
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID,
