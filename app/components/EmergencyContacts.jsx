@@ -8,7 +8,7 @@ export default function EmergencyContacts() {
             number: "100",
             gradient: "from-rose-500 to-rose-600",
             hoverGradient: "from-rose-600 to-rose-700",
-            icon: <Shield className="w-5 h-5 sm:w-6 sm:h-6" />,
+            icon: <Shield className="w-6 h-6" />,
             description: "For law enforcement emergencies"
         },
         {
@@ -16,7 +16,7 @@ export default function EmergencyContacts() {
             number: "101",
             gradient: "from-amber-500 to-amber-600",
             hoverGradient: "from-amber-600 to-amber-700",
-            icon: <Flame className="w-5 h-5 sm:w-6 sm:h-6" />,
+            icon: <Flame className="w-6 h-6" />,
             description: "For fire and rescue emergencies"
         },
         {
@@ -24,15 +24,15 @@ export default function EmergencyContacts() {
             number: "102",
             gradient: "from-cyan-500 to-cyan-600",
             hoverGradient: "from-cyan-600 to-cyan-700",
-            icon: <Heart className="w-5 h-5 sm:w-6 sm:h-6" />,
+            icon: <Heart className="w-6 h-6" />,
             description: "For medical emergencies"
         },
         {
             label: "Disaster Relief",
-            number: "108",
+            number: "112",
             gradient: "from-emerald-500 to-emerald-600",
             hoverGradient: "from-emerald-600 to-emerald-700",
-            icon: <LifeBuoy className="w-5 h-5 sm:w-6 sm:h-6" />,
+            icon: <LifeBuoy className="w-6 h-6" />,
             description: "For disaster and emergency relief"
         },
     ];
@@ -48,34 +48,34 @@ export default function EmergencyContacts() {
                 <h2 className="text-xl md:text-2xl font-bold text-white">Emergency Contacts</h2>
             </div>
             <div className="p-3 md:p-4">
-                <ul className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
                     {contacts.map((contact, index) => (
-                        <li
+                        <div
                             key={index}
-                            className="group relative rounded-lg overflow-hidden transition-all duration-300 hover:shadow-md"
+                            className="group relative rounded-lg overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer border border-rose-300"
                         >
                             <div className={`absolute inset-0 bg-gradient-to-r ${contact.gradient} group-hover:${contact.hoverGradient} transition-all duration-300`}></div>
-                            <div className="relative flex items-center gap-4 p-4 text-white">
-                                <div className="bg-white/20 p-2 rounded-full">
-                                    {contact.icon}
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-sm md:text-base font-semibold">{contact.label}</span>
-                                    <span className="text-sm font-bold">{contact.number}</span>
-                                    <span className="text-xs text-white/80 hidden sm:block">{contact.description}</span>
-                                </div>
-                                <div className="ml-auto">
+                            <div className="relative h-full">
+                                <div className="flex flex-col items-center gap-3 p-4 text-white text-center h-full sm:flex-col sm:items-center">
+                                    <div className="bg-white/20 p-3 rounded-full border border-rose-200">
+                                        {contact.icon}
+                                    </div>
+                                    <div className="flex-1 space-y-1 sm:space-y-1">
+                                        <h3 className="text-base font-semibold">{contact.label}</h3>
+                                        <p className="text-lg font-bold">{contact.number}</p>
+                                        <p className="text-xs text-white/80">{contact.description}</p>
+                                    </div>
                                     <button
-                                        className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-xs transition-all"
+                                        className="px-4 py-2 bg-white/20 group-hover:bg-white/30 rounded-full text-sm font-medium transition-all duration-200 border border-rose-300 sm:mt-auto"
                                         onClick={() => handleCall(contact.number)}
                                     >
                                         Call
                                     </button>
                                 </div>
                             </div>
-                        </li>
+                        </div>
                     ))}
-                </ul>
+                </div>
             </div>
         </div>
     );

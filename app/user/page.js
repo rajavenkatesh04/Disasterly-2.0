@@ -146,7 +146,7 @@ export default function PanelPage() {
         switch (status?.toLowerCase()) {
             case 'pending': return 'bg-amber-100 text-amber-800 border-amber-200';
             case 'in progress': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+            case 'resolved': return 'bg-green-100 text-green-800 border-green-200';
             case 'urgent': case 'critical': return 'bg-red-100 text-red-800 border-red-200';
             default: return 'bg-gray-100 text-gray-800 border-gray-200';
         }
@@ -156,7 +156,7 @@ export default function PanelPage() {
         switch (status?.toLowerCase()) {
             case 'pending': return 'border-amber-500';
             case 'in progress': return 'border-blue-500';
-            case 'completed': return 'border-green-500';
+            case 'resolved': return 'border-green-500';
             case 'urgent': case 'critical': return 'border-red-500';
             default: return 'border-gray-300';
         }
@@ -166,7 +166,7 @@ export default function PanelPage() {
         switch (status?.toLowerCase()) {
             case 'pending': return 'text-amber-800';
             case 'in progress': return 'text-blue-800';
-            case 'completed': return 'text-green-800';
+            case 'resolved': return 'text-green-800';
             case 'urgent': case 'critical': return 'text-red-800';
             default: return 'text-gray-800';
         }

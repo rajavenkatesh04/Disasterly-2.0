@@ -123,7 +123,7 @@ const getStatusColor = (statusValue) => {
             return 'bg-amber-100 text-amber-800 border-amber-200';
         case 'in progress':
             return 'bg-blue-100 text-blue-800 border-blue-200';
-        case 'completed':
+        case 'resolved':
             return 'bg-green-100 text-green-800 border-green-200';
         case 'urgent':
         case 'critical':
@@ -143,7 +143,7 @@ const getStatusBorderColor = (statusValue) => {
             return 'border-amber-500';
         case 'in progress':
             return 'border-blue-500';
-        case 'completed':
+        case 'resolved':
             return 'border-green-500';
         case 'urgent':
         case 'critical':
@@ -159,7 +159,7 @@ const getStatusBorderColor = (statusValue) => {
 
 // Status badge component with dropdown and loader
 const StatusBadge = ({ status, itemId, onStatusChange, isDonation = false, activeSection, isOpen, setIsOpen, isUpdating, setIsUpdating }) => {
-    const isCompleted = status?.toLowerCase() === 'completed';
+    const isCompleted = status?.toLowerCase() === 'resolved';
 
     const handleStatusUpdate = async (newStatus) => {
         setIsUpdating(true);
@@ -240,11 +240,11 @@ const StatusBadge = ({ status, itemId, onStatusChange, isDonation = false, activ
                                 </li>
                                 <li>
                                     <button
-                                        onClick={() => handleStatusUpdate('completed')}
+                                        onClick={() => handleStatusUpdate('resolved')}
                                         className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center text-green-700"
                                     >
                                         <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-                                        Completed
+                                        resolved
                                     </button>
                                 </li>
                                 <li>
@@ -632,7 +632,7 @@ export default function PersonnelPage() {
                     ) : (
                         getDataForSection(activeSection, emergencies, supports, donations, volunteers, users)
                             .sort((a, b) => {
-                                const severityOrder = { 'urgent': 1, 'critical': 1, 'pending': 2, 'in progress': 3, 'completed': 4, 'active': 3, 'inactive': 4 };
+                                const severityOrder = { 'urgent': 1, 'critical': 1, 'pending': 2, 'in progress': 3, 'resolved': 4, 'active': 3, 'inactive': 4 };
                                 return severityOrder[a.status?.toLowerCase()] - severityOrder[b.status?.toLowerCase()];
                             })
                             .map((item, index) => {
@@ -640,7 +640,7 @@ export default function PersonnelPage() {
                                 const { isOpen = false, isUpdating = false } = badgeStates[uniqueKey] || {};
 
                                 const handleToggleOpen = () => {
-                                    if (!isDonation && item.status?.toLowerCase() !== 'completed') {
+                                    if (!isDonation && item.status?.toLowerCase() !== 'resolved') {
                                         setBadgeStates(prev => ({
                                             ...prev,
                                             [uniqueKey]: { ...prev[uniqueKey], isOpen: !isOpen }
@@ -665,7 +665,7 @@ export default function PersonnelPage() {
                                 const isDonation = activeSection === 'donations';
                                 const isUser = activeSection === 'users';
                                 const isVolunteer = activeSection === 'volunteers';
-                                const isCompleted = status === 'completed';
+                                const isCompleted = status === 'resolved';
 
                                 let timeRemaining = null;
                                 if (item.expectedResponseTime) {

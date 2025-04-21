@@ -655,10 +655,10 @@ export default function GetHelpPage() {
                                 <span className="text-gray-600">Request ID:</span>
                                 <span className="font-mono bg-white px-2 py-1 rounded">{requestId}</span>
                             </div>
-                            <div className="flex justify-between mb-2">
-                                <span className="text-gray-600">Reference ID:</span>
-                                <span className="font-mono bg-white px-2 py-1 rounded">{mongoId}</span>
-                            </div>
+                            {/*<div className="flex justify-between mb-2">*/}
+                            {/*    <span className="text-gray-600">Reference ID:</span>*/}
+                            {/*    <span className="font-mono bg-white px-2 py-1 rounded flex-row">{mongoId}</span>*/}
+                            {/*</div>*/}
                             {emergencyFormData.emergencyType && (
                                 <div className="flex justify-between mb-2">
                                     <span className="text-gray-600">Emergency Type:</span>

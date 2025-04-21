@@ -10,7 +10,7 @@ export default function Footer() {
     ];
 
     return (
-        <footer className="bg-white/80 backdrop-blur-sm py-6 border-t border-gray-100 mt-25 ">
+        <footer className="bg-white/80 backdrop-blur-sm py-6 border-t border-gray-100 mt-10 ">
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Section 1: Logo and Mission Statement */}
