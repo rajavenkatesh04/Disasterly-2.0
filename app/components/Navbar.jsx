@@ -8,6 +8,7 @@ import {
     Bell,
     Heart,
     BookOpen,
+    TextSelect,
     LayoutDashboard,
     CircleUserRound,
 } from "lucide-react";
@@ -41,8 +42,9 @@ export default function Navbar() {
     if (userRole === "admin") {
         navLinks.push({
             href: "/personnel",
-            label: "Alerts",
-            icon: <Bell size={16} />,
+            label: "Manage",
+            icon: <TextSelect size={16}/>,
+
         });
     }
 

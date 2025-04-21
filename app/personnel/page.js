@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Phone, AlertCircle, HeartHandshake, Gift, ArrowLeft, Menu, Clock, Calendar, User, Users } from 'lucide-react';
+import { Phone, AlertCircle, HeartHandshake, Gift, ArrowLeft, Menu, Clock, Calendar, User, Users, X } from 'lucide-react';
 
 // Improved call function that opens the dialer directly
 const handleCall = (phone) => {
@@ -73,7 +73,7 @@ const formatDate = (dateString) => {
 // Calculate age function
 const calculateAge = (dateOfBirth) => {
     if (!dateOfBirth) return null;
-    const today = new Date('2025-04-17'); // Current date
+    const today = new Date('2025-04-17');
     const birthDate = new Date(dateOfBirth);
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -106,54 +106,38 @@ const getTimeRemaining = (deadline) => {
     }
 };
 
-// Card skeleton while loading
+// Animated skeleton card component
 const SkeletonCard = () => (
-    <div className="bg-white rounded-xl shadow-sm p-4 mb-4 min-h-[200px] w-full">
+    <div className="bg-white rounded-xl shadow-sm p-4 mb-4 min-h-[200px] w-full animate-pulse">
         <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
         <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
         <div className="h-16 bg-gray-100 rounded mb-3"></div>
-        <div className="h-8 bg-gray-200 rounded"></div>
+        <div className="h-8 bg-gray-200 rounded w-1/3"></div>
     </div>
 );
 
 // Utility functions extracted from StatusBadge
 const getStatusColor = (statusValue) => {
     switch (statusValue?.toLowerCase()) {
-        case 'pending':
-            return 'bg-amber-100 text-amber-800 border-amber-200';
-        case 'in progress':
-            return 'bg-blue-100 text-blue-800 border-blue-200';
-        case 'resolved':
-            return 'bg-green-100 text-green-800 border-green-200';
-        case 'urgent':
-        case 'critical':
-            return 'bg-red-100 text-red-800 border-red-200';
-        case 'active':
-            return 'bg-green-100 text-green-800 border-green-200';
-        case 'inactive':
-            return 'bg-gray-100 text-gray-800 border-gray-200';
-        default:
-            return 'bg-gray-100 text-gray-800 border-gray-200';
+        case 'pending': return 'bg-amber-100 text-amber-800 border-amber-200';
+        case 'in progress': return 'bg-blue-100 text-blue-800 border-blue-200';
+        case 'resolved': return 'bg-green-100 text-green-800 border-green-200';
+        case 'urgent': case 'critical': return 'bg-red-100 text-red-800 border-red-200';
+        case 'active': return 'bg-green-100 text-green-800 border-green-200';
+        case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
+        default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
 };
 
 const getStatusBorderColor = (statusValue) => {
     switch (statusValue?.toLowerCase()) {
-        case 'pending':
-            return 'border-amber-500';
-        case 'in progress':
-            return 'border-blue-500';
-        case 'resolved':
-            return 'border-green-500';
-        case 'urgent':
-        case 'critical':
-            return 'border-red-500';
-        case 'active':
-            return 'border-green-500';
-        case 'inactive':
-            return 'border-gray-500';
-        default:
-            return 'border-gray-300';
+        case 'pending': return 'border-amber-500';
+        case 'in progress': return 'border-blue-500';
+        case 'resolved': return 'border-green-500';
+        case 'urgent': case 'critical': return 'border-red-500';
+        case 'active': return 'border-green-500';
+        case 'inactive': return 'border-gray-500';
+        default: return 'border-gray-300';
     }
 };
 
@@ -265,16 +249,58 @@ const StatusBadge = ({ status, itemId, onStatusChange, isDonation = false, activ
     );
 };
 
+// Assignee popup component
+const AssigneePopup = ({ requestId, section, adminUsers, currentUser, onAssigneeChange, onClose }) => {
+    return (
+        <div className="absolute z-20 bg-white rounded-md shadow-lg border border-gray-200 p-4 w-48">
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium text-gray-900">Change Assignee</h3>
+                <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+            <select
+                onChange={(e) => {
+                    onAssigneeChange(requestId, e.target.value, section);
+                    onClose();
+                }}
+                className="w-full border border-gray-300 rounded-md text-xs py-1 px-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+                <option value="">Unassigned</option>
+                <option value={currentUser?.userId}>You ({currentUser?.name})</option>
+                {adminUsers
+                    .filter(user => user.userId !== currentUser?.userId)
+                    .map(user => (
+                        <option key={user.userId} value={user.userId}>
+                            {user.name}
+                        </option>
+                    ))}
+            </select>
+        </div>
+    );
+};
+
 // Function to get data for a section
-const getDataForSection = (section, emergencies, supports, donations, volunteers, users) => {
+const getDataForSection = (section, emergencies, supports, donations, volunteers, users, userFilter) => {
+    let data = [];
     switch (section) {
-        case 'emergencies': return emergencies;
-        case 'supports': return supports;
-        case 'donations': return donations;
-        case 'volunteers': return volunteers;
-        case 'users': return users;
-        default: return [];
+        case 'emergencies': data = emergencies; break;
+        case 'supports': data = supports; break;
+        case 'donations': data = donations; break;
+        case 'volunteers': data = volunteers; break;
+        case 'users':
+            data = users;
+            if (userFilter) {
+                if (userFilter === 'male' || userFilter === 'female') {
+                    data = users.filter(user => user.gender?.toLowerCase() === userFilter);
+                } else if (userFilter === 'admin' || userFilter === 'user') {
+                    data = users.filter(user => user.role?.toLowerCase() === userFilter);
+                }
+            }
+            break;
+        default: data = [];
     }
+    return data;
 };
 
 export default function PersonnelPage() {
@@ -288,27 +314,97 @@ export default function PersonnelPage() {
     const [adminUsers, setAdminUsers] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [timeUpdate, setTimeUpdate] = useState(0);
+    const [progress, setProgress] = useState(0);
     const [isAuthorized, setIsAuthorized] = useState(false);
-    const [countdown, setCountdown] = useState(5);
     const [badgeStates, setBadgeStates] = useState({});
     const [assigneeUpdatingStates, setAssigneeUpdatingStates] = useState({});
+    const [showAssigneePopup, setShowAssigneePopup] = useState(null);
+    const [userFilter, setUserFilter] = useState(null);
+    const [dataOpacity, setDataOpacity] = useState(0);
 
     const router = useRouter();
 
-    // Authorization check using session data
+    // Realistic loading progress
     useEffect(() => {
-        let timer;
+        if (loading) {
+            const totalSteps = 6; // Number of API calls
+            let completedSteps = 0;
+
+            const updateProgress = () => {
+                completedSteps++;
+                setProgress((completedSteps / totalSteps) * 100);
+            };
+
+            const fetchWithProgress = async (url, errorMessage) => {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`${errorMessage}: ${res.statusText}`);
+                updateProgress();
+                return await res.json();
+            };
+
+            const fetchData = async () => {
+                try {
+                    const emergenciesData = await fetchWithProgress('/api/emergencies?all=true', 'Failed to fetch emergencies');
+                    setEmergencies(emergenciesData);
+
+                    const supportsData = await fetchWithProgress('/api/supports?all=true', 'Failed to fetch supports');
+                    setSupports(supportsData);
+
+                    const donationsData = await fetchWithProgress('/api/donations?all=true', 'Failed to fetch donations');
+                    setDonations(donationsData);
+
+                    const usersData = await fetchWithProgress('/api/users?all=true', 'Failed to fetch users');
+                    const volunteersData = await fetchWithProgress('/api/volunteers?all=true', 'Failed to fetch volunteers');
+                    const adminUsersData = await fetchWithProgress('/api/users?role=admin', 'Failed to fetch admin users');
+
+                    const mergedVolunteers = volunteersData.map((volunteer, index) => {
+                        const matchingUser = usersData.find(user => user.email === volunteer.email);
+                        if (!volunteer.requestId) {
+                            console.warn(`Volunteer at index ${index} has no requestId:`, volunteer);
+                        }
+                        if (matchingUser) {
+                            return {
+                                ...matchingUser,
+                                requestId: volunteer.requestId || matchingUser.userId || `volunteer-${index}`,
+                                skills: volunteer.skills,
+                                availability: volunteer.availability,
+                                status: volunteer.status,
+                                volunteerCreatedAt: volunteer.createdAt,
+                            };
+                        }
+                        return {
+                            ...volunteer,
+                            requestId: volunteer.requestId || `volunteer-${index}`,
+                        };
+                    });
+
+                    setUsers(usersData);
+                    setVolunteers(mergedVolunteers);
+                    setAdminUsers(adminUsersData);
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    alert(`Error fetching data: ${error.message}`);
+                } finally {
+                    setLoading(false);
+                    setProgress(100);
+                    setDataOpacity(1); // Trigger fade-in
+                }
+            };
+
+            if (isAuthorized) {
+                fetchData();
+            }
+        }
+    }, [isAuthorized]);
+
+    // Authorization check
+    useEffect(() => {
         const checkUserRole = async () => {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const isUnauthorized = urlParams.get('unauthorized') === 'true';
 
-                console.log("🔍 URL params:", Object.fromEntries(urlParams.entries()));
-                console.log("🔍 Unauthorized flag detected:", isUnauthorized);
-
                 if (isUnauthorized) {
-                    console.log("🚫 User unauthorized, redirecting to noaccess page...");
                     setTimeout(() => {
                         router.push('/noaccess');
                     }, 0);
@@ -318,10 +414,8 @@ export default function PersonnelPage() {
                 const response = await fetch('/api/auth/session');
                 if (!response.ok) throw new Error('Failed to fetch session');
                 const session = await response.json();
-                console.log("🔍 Session data:", session);
 
                 if (!session || !session.user) {
-                    console.log("❌ No session or user, redirecting to signin...");
                     setTimeout(() => {
                         router.push('/signin?callbackUrl=/personnel');
                     }, 0);
@@ -339,81 +433,13 @@ export default function PersonnelPage() {
             }
         };
         checkUserRole();
-        return () => clearInterval(timer);
     }, [router]);
 
-    // Fetch data if authorized
-    useEffect(() => {
-        if (!isAuthorized) return;
-
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const fetchWithErrorHandling = async (url, errorMessage) => {
-                    const res = await fetch(url);
-                    if (!res.ok) throw new Error(`${errorMessage}: ${res.statusText}`);
-                    return await res.json();
-                };
-
-                const emergenciesData = await fetchWithErrorHandling('/api/emergencies?all=true', 'Failed to fetch emergencies');
-                setEmergencies(emergenciesData);
-
-                const supportsData = await fetchWithErrorHandling('/api/supports?all=true', 'Failed to fetch supports');
-                setSupports(supportsData);
-
-                const donationsData = await fetchWithErrorHandling('/api/donations?all=true', 'Failed to fetch donations');
-                setDonations(donationsData);
-
-                const usersData = await fetchWithErrorHandling('/api/users?all=true', 'Failed to fetch users');
-                const volunteersData = await fetchWithErrorHandling('/api/volunteers?all=true', 'Failed to fetch volunteers');
-                const adminUsersData = await fetchWithErrorHandling('/api/users?role=admin', 'Failed to fetch admin users');
-
-                const mergedVolunteers = volunteersData.map((volunteer, index) => {
-                    const matchingUser = usersData.find(user => user.email === volunteer.email);
-                    if (!volunteer.requestId) {
-                        console.warn(`Volunteer at index ${index} has no requestId:`, volunteer);
-                    }
-                    if (matchingUser) {
-                        return {
-                            ...matchingUser,
-                            requestId: volunteer.requestId || matchingUser.userId || `volunteer-${index}`,
-                            skills: volunteer.skills,
-                            availability: volunteer.availability,
-                            status: volunteer.status,
-                            volunteerCreatedAt: volunteer.createdAt,
-                        };
-                    }
-                    return {
-                        ...volunteer,
-                        requestId: volunteer.requestId || `volunteer-${index}`,
-                    };
-                });
-
-                const requestIds = mergedVolunteers.map(v => v.requestId);
-                const duplicates = requestIds.filter((id, index) => requestIds.indexOf(id) !== index);
-                if (duplicates.length > 0) {
-                    console.warn('Duplicate volunteer requestIds found:', duplicates);
-                }
-
-                setUsers(usersData);
-                setVolunteers(mergedVolunteers);
-                setAdminUsers(adminUsersData);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                alert(`Error fetching data: ${error.message}`);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [isAuthorized]);
-
+    // Time update for deadlines
     useEffect(() => {
         const timer = setInterval(() => {
-            setTimeUpdate(prev => prev + 1);
+            setDataOpacity(prev => Math.min(prev + 0.1, 1));
         }, 30000);
-
         return () => clearInterval(timer);
     }, []);
 
@@ -494,12 +520,35 @@ export default function PersonnelPage() {
         }
     };
 
+    const handleSectionChange = (section) => {
+        setActiveSection(section);
+        setIsSidebarOpen(false);
+        setUserFilter(null); // Reset filter when changing sections
+    };
+
+    const handleRightClick = (e, requestId, section) => {
+        if (section === 'emergencies' || section === 'supports') {
+            e.preventDefault();
+            setShowAssigneePopup({ requestId, section, x: e.clientX, y: e.clientY });
+        }
+    };
+
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="text-center p-8 bg-white rounded-xl shadow-md max-w-md">
-                    <AlertCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Loading...</h1>
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+                <div className="text-center w-full max-w-4xl">
+                    <div className="mb-4">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                                style={{ width: `${progress}%` }}
+                            ></div>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2">Loading data... {Math.round(progress)}%</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Array(6).fill().map((_, i) => <SkeletonCard key={`skeleton-${i}`} />)}
+                    </div>
                 </div>
             </div>
         );
@@ -518,12 +567,21 @@ export default function PersonnelPage() {
                 isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
             } md:translate-x-0 md:static md:w-64 transition-transform duration-300 ease-in-out flex flex-col`}>
                 <div className="p-6 flex-1">
-                    <Link href="/" className="flex items-center space-x-2 mb-8">
-                        <div className="h-8 w-8 rounded-md bg-indigo-600 flex items-center justify-center">
-                            <span className="text-white font-bold">P</span>
-                        </div>
-                        <h2 className="text-xl font-bold text-gray-900">Personnel Panel</h2>
-                    </Link>
+                    <div className="flex items-center justify-between mb-8">
+                        <Link href="/" className="flex items-center space-x-2">
+                            <div className="h-8 w-8 rounded-md bg-indigo-600 flex items-center justify-center">
+                                <span className="text-white font-bold">P</span>
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900">Personnel Panel</h2>
+                        </Link>
+                        <button
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="md:hidden text-gray-600 hover:text-gray-900"
+                            aria-label="Close sidebar"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
 
                     <nav>
                         <div className="mb-2 text-xs font-semibold uppercase text-gray-500 tracking-wider pl-3">
@@ -533,7 +591,7 @@ export default function PersonnelPage() {
                             {['emergencies', 'supports', 'donations', 'volunteers', 'users'].map(section => (
                                 <li key={section}>
                                     <button
-                                        onClick={() => setActiveSection(section)}
+                                        onClick={() => handleSectionChange(section)}
                                         className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
                                             activeSection === section
                                                 ? 'bg-indigo-50 text-indigo-700 font-medium'
@@ -567,7 +625,7 @@ export default function PersonnelPage() {
                 </div>
             </aside>
 
-            <main className="flex-1 p-4 md:p-6">
+            <main className="flex-1 p-4 md:p-6" style={{ opacity: dataOpacity, transition: 'opacity 0.5s ease-in' }}>
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                         <button
@@ -603,25 +661,40 @@ export default function PersonnelPage() {
                     </div>
                 </div>
 
-                <div className="mb-4 flex justify-center md:justify-start">
+                <div className="mb-4 flex justify-center md:justify-start items-center">
                     <div className={`inline-flex items-center px-4 py-2 rounded-full ${
                         activeSection === 'emergencies' ? 'bg-red-50 text-red-700' :
                             activeSection === 'supports' ? 'bg-blue-50 text-blue-700' :
-                                activeSection === 'donations' ? 'bg-purple-50 text-purple-700' :
+                                activeSection === 'donations' ? 'bg-green-50 text-green-700' :
                                     activeSection === 'volunteers' ? 'bg-green-50 text-green-700' :
                                         'bg-pink-50 text-pink-700'
                     }`}>
                         {getIconForSection(activeSection)}
                         <span className="ml-2 font-medium">
-                            {getDataForSection(activeSection, emergencies, supports, donations, volunteers, users).length} {activeSection} to manage
+                            {getDataForSection(activeSection, emergencies, supports, donations, volunteers, users, userFilter).length} {activeSection} to manage
                         </span>
                     </div>
+                    {activeSection === 'users' && (
+                        <div className="ml-4 flex space-x-2">
+                            {['male', 'female', 'admin', 'user'].map(filter => (
+                                <button
+                                    key={filter}
+                                    onClick={() => setUserFilter(userFilter === filter ? null : filter)}
+                                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                        userFilter === filter
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {loading ? (
-                        Array(6).fill().map((_, i) => <SkeletonCard key={`skeleton-${i}`} />)
-                    ) : getDataForSection(activeSection, emergencies, supports, donations, volunteers, users).length === 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 relative">
+                    {getDataForSection(activeSection, emergencies, supports, donations, volunteers, users, userFilter).length === 0 ? (
                         <div className="col-span-full flex flex-col items-center justify-center text-gray-500 py-12">
                             <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                 {getIconForSection(activeSection)}
@@ -630,7 +703,7 @@ export default function PersonnelPage() {
                             <p className="text-sm">All caught up! Check back later.</p>
                         </div>
                     ) : (
-                        getDataForSection(activeSection, emergencies, supports, donations, volunteers, users)
+                        getDataForSection(activeSection, emergencies, supports, donations, volunteers, users, userFilter)
                             .sort((a, b) => {
                                 const severityOrder = { 'urgent': 1, 'critical': 1, 'pending': 2, 'in progress': 3, 'resolved': 4, 'active': 3, 'inactive': 4 };
                                 return severityOrder[a.status?.toLowerCase()] - severityOrder[b.status?.toLowerCase()];
@@ -675,13 +748,17 @@ export default function PersonnelPage() {
                                 let borderColor = '';
                                 if (isUser || isVolunteer) {
                                     borderColor = item.gender?.toLowerCase() === 'male' ? 'border-blue-500' : 'border-pink-500';
+                                } else if (isDonation) {
+                                    borderColor = 'border-green-500';
                                 } else {
                                     borderColor = getStatusBorderColor(status);
                                 }
 
                                 return (
-                                    <div key={uniqueKey}
-                                         className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${borderColor} min-h-[200px] w-full`}
+                                    <div
+                                        key={uniqueKey}
+                                        className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${borderColor} min-h-[200px] w-full relative`}
+                                        onContextMenu={(e) => handleRightClick(e, requestId, activeSection)}
                                     >
                                         <div className="p-4">
                                             {(isUser || isVolunteer) ? (
@@ -763,25 +840,7 @@ export default function PersonnelPage() {
                                                             {activeSection === 'emergencies' || activeSection === 'supports' ? (
                                                                 <div className="text-xs text-gray-500 mt-0.5 flex items-center">
                                                                     <span className="font-medium mr-1">Assignee:</span>
-                                                                    {item.assignee ? (
-                                                                        <span className="text-gray-600">{takenBy}</span>
-                                                                    ) : (
-                                                                        <select
-                                                                            value={item.assignee || ''}
-                                                                            onChange={(e) => handleAssigneeChange(requestId, e.target.value, activeSection)}
-                                                                            className="border border-gray-300 rounded-md text-xs py-1 px-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                                        >
-                                                                            <option value="">Unassigned</option>
-                                                                            <option value={currentUser?.userId}>You ({currentUser?.name})</option>
-                                                                            {adminUsers
-                                                                                .filter(user => user.userId !== currentUser?.userId)
-                                                                                .map(user => (
-                                                                                    <option key={user.userId} value={user.userId}>
-                                                                                        {user.name}
-                                                                                    </option>
-                                                                                ))}
-                                                                        </select>
-                                                                    )}
+                                                                    <span className="text-gray-600">{takenBy}</span>
                                                                     {assigneeUpdatingStates[requestId] && (
                                                                         <svg className="animate-spin h-4 w-4 ml-2 text-gray-500" viewBox="0 0 24 24">
                                                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
@@ -920,6 +979,18 @@ export default function PersonnelPage() {
                                                 )}
                                             </div>
                                         </div>
+                                        {showAssigneePopup && showAssigneePopup.requestId === requestId && (
+                                            <div style={{ position: 'absolute', top: showAssigneePopup.y, left: showAssigneePopup.x }}>
+                                                <AssigneePopup
+                                                    requestId={requestId}
+                                                    section={activeSection}
+                                                    adminUsers={adminUsers}
+                                                    currentUser={currentUser}
+                                                    onAssigneeChange={handleAssigneeChange}
+                                                    onClose={() => setShowAssigneePopup(null)}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })

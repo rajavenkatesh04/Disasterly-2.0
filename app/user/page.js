@@ -20,11 +20,46 @@ const handleCall = (phone) => {
 
 // Component for skeleton loader cards
 const SkeletonCard = () => (
-    <div className="bg-white rounded-xl shadow-sm p-4 mb-4 min-h-[200px] w-full">
+    <div className="bg-white rounded-xl shadow-sm p-4 mb-4 min-h-[200px] w-full animate-pulse">
         <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
         <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
         <div className="h-16 bg-gray-100 rounded mb-3"></div>
         <div className="h-8 bg-gray-200 rounded"></div>
+    </div>
+);
+
+// Skeleton for account section
+const SkeletonAccount = () => (
+    <div className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
+        <div className="flex justify-between items-center mb-6">
+            <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-8 bg-gray-200 rounded w-32"></div>
+        </div>
+        <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex flex-col items-center lg:w-1/3">
+                <div className="h-48 w-48 rounded-full bg-gray-200"></div>
+                <div className="mt-4 w-full max-w-xs">
+                    <div className="h-20 bg-gray-100 rounded-lg"></div>
+                </div>
+            </div>
+            <div className="flex-1 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {Array(5).fill().map((_, i) => (
+                        <div key={`skeleton-field-${i}`} className="space-y-1">
+                            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                            <div className="h-5 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                    ))}
+                </div>
+                <div>
+                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 );
 
@@ -37,6 +72,7 @@ export default function PanelPage() {
     const [donations, setDonations] = useState([]);
     const [volunteering, setVolunteering] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [progress, setProgress] = useState(0);
     const [assignees, setAssignees] = useState({});
     const [userData, setUserData] = useState({
         name: '',
@@ -52,38 +88,72 @@ export default function PanelPage() {
     const [success, setSuccess] = useState('');
     const [editMode, setEditMode] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [dataOpacity, setDataOpacity] = useState(0);
 
-    // Fetch data client-side with user-specific userId
+    // Realistic loading progress
     useEffect(() => {
         if (status === 'authenticated' && session?.user?.userId) {
+            const totalSteps = 5; // Number of API calls + mock volunteering
+            let completedSteps = 0;
+
+            const updateProgress = () => {
+                completedSteps++;
+                setProgress((completedSteps / totalSteps) * 100);
+            };
+
             const fetchData = async () => {
                 setLoading(true);
                 try {
-                    // Fetch emergencies for the user
+                    // Fetch emergencies
                     const emergenciesRes = await fetch(`/api/emergencies?userId=${session.user.userId}`);
                     if (!emergenciesRes.ok) throw new Error('Failed to fetch emergencies');
                     const emergenciesData = await emergenciesRes.json();
                     setEmergencies(emergenciesData);
+                    updateProgress();
 
-                    // Fetch supports for the user
+                    // Fetch supports
                     const supportsRes = await fetch(`/api/supports?userId=${session.user.userId}`);
                     if (!supportsRes.ok) throw new Error('Failed to fetch supports');
                     const supportsData = await supportsRes.json();
                     setSupports(supportsData);
+                    updateProgress();
 
-                    // Fetch donations for the user
+                    // Fetch donations
                     const donationsRes = await fetch(`/api/donations?userId=${session.user.userId}`);
                     if (!donationsRes.ok) throw new Error('Failed to fetch donations');
                     const donationsData = await donationsRes.json();
                     setDonations(donationsData);
+                    updateProgress();
 
                     // Mock volunteering data
                     setVolunteering([
                         { id: 'VOL1', event: 'Assam Floods Cleanup', date: '2025-03-15', hours: 4, userId: session.user.userId },
                         { id: 'VOL2', event: 'Kerala Relief Camp', date: '2024-12-10', hours: 6, userId: session.user.userId },
                     ].filter(v => v.userId === session.user.userId));
+                    updateProgress();
 
-                    // Fetch assignees for emergencies and supports
+                    // Fetch user data
+                    const userRes = await fetch('/api/profilethings');
+                    if (!userRes.ok) throw new Error('Failed to fetch user data');
+                    const userData = await userRes.json();
+                    setUserData({
+                        name: userData.name || '',
+                        email: userData.email || '',
+                        image: userData.image || '',
+                        phone: userData.phone || '',
+                        gender: userData.gender || '',
+                        dateOfBirth: userData.dateOfBirth ? new Date(userData.dateOfBirth).toISOString().split('T')[0] : '',
+                        address: {
+                            street: userData.address?.street || '',
+                            city: userData.address?.city || '',
+                            state: userData.address?.state || '',
+                            postalCode: userData.address?.postalCode || '',
+                            country: userData.address?.country || '',
+                        },
+                    });
+                    updateProgress();
+
+                    // Fetch assignees
                     const assigneeIds = [...emergenciesData, ...supportsData]
                         .filter(item => item.assignee)
                         .map(item => item.assignee);
@@ -108,35 +178,17 @@ export default function PanelPage() {
                     } else {
                         setAssignees({});
                     }
-
-                    // Fetch user data for account section from new endpoint
-                    const userRes = await fetch('/api/profilethings');
-                    if (!userRes.ok) throw new Error('Failed to fetch user data');
-                    const userData = await userRes.json();
-                    setUserData({
-                        name: userData.name || '',
-                        email: userData.email || '',
-                        image: userData.image || '',
-                        phone: userData.phone || '',
-                        gender: userData.gender || '',
-                        dateOfBirth: userData.dateOfBirth ? new Date(userData.dateOfBirth).toISOString().split('T')[0] : '',
-                        address: {
-                            street: userData.address?.street || '',
-                            city: userData.address?.city || '',
-                            state: userData.address?.state || '',
-                            postalCode: userData.address?.postalCode || '',
-                            country: userData.address?.country || '',
-                        },
-                    });
                 } catch (error) {
                     console.error('Error fetching data:', error);
                 } finally {
                     setLoading(false);
+                    setProgress(100);
+                    setDataOpacity(1); // Trigger fade-in
                 }
             };
             fetchData();
         }
-    }, [session, status]);
+    }, [session, status, loading]); // Add 'loading' here
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
@@ -158,7 +210,7 @@ export default function PanelPage() {
             case 'in progress': return 'border-blue-500';
             case 'resolved': return 'border-green-500';
             case 'urgent': case 'critical': return 'border-red-500';
-            default: return 'border-gray-300';
+            default: return 'border-green-500'; // Green for donations
         }
     };
 
@@ -269,8 +321,30 @@ export default function PanelPage() {
         }
     };
 
-    if (status === 'loading') return <div className="p-6"><Skeleton height={400} /></div>;
-    if (status === 'unauthenticated') return <div className="p-6 text-center text-gray-600">Please log in to view your panel.</div>;
+    if (status === 'loading') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+                <div className="text-center w-full max-w-4xl">
+                    <div className="mb-4">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                                style={{ width: `${progress}%` }}
+                            ></div>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2">Loading data... {Math.round(progress)}%</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Array(6).fill().map((_, i) => <SkeletonCard key={`skeleton-${i}`} />)}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (status === 'unauthenticated') {
+        return <div className="p-6 text-center text-gray-600">Please log in to view your panel.</div>;
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-800 flex flex-col md:flex-row">
@@ -286,12 +360,21 @@ export default function PanelPage() {
                 isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
             } md:translate-x-0 md:static md:w-64 transition-transform duration-300 ease-in-out flex flex-col`}>
                 <div className="p-6 flex-1">
-                    <Link href="/" className="flex items-center space-x-2 mb-8">
-                        <div className="h-8 w-8 rounded-md bg-indigo-600 flex items-center justify-center">
-                            <span className="text-white font-bold">U</span>
-                        </div>
-                        <h2 className="text-xl font-bold text-gray-900">User Profile</h2>
-                    </Link>
+                    <div className="flex items-center justify-between mb-8">
+                        <Link href="/" className="flex items-center space-x-2">
+                            <div className="h-8 w-8 rounded-md bg-indigo-600 flex items-center justify-center">
+                                <span className="text-white font-bold">U</span>
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900">User Profile</h2>
+                        </Link>
+                        <button
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="md:hidden text-gray-600 hover:text-gray-900"
+                            aria-label="Close sidebar"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
 
                     <nav>
                         <div className="mb-2 text-xs font-semibold uppercase text-gray-500 tracking-wider pl-3">
@@ -307,6 +390,7 @@ export default function PanelPage() {
                                                 setEditMode(false);
                                                 setShowDeleteConfirm(false);
                                             }
+                                            setIsSidebarOpen(false);
                                         }}
                                         className={`w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 ${
                                             activeSection === section
@@ -342,7 +426,7 @@ export default function PanelPage() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 p-4 md:p-6">
+            <main className="flex-1 p-4 md:p-6" style={{ opacity: dataOpacity, transition: 'opacity 0.5s ease-in' }}>
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                         <button
@@ -377,326 +461,330 @@ export default function PanelPage() {
                 </div>
 
                 {activeSection === 'account' ? (
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        {showDeleteConfirm && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                <div className="flex items-start">
-                                    <AlertTriangle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
-                                    <div>
-                                        <h3 className="text-lg font-medium text-red-800">Delete your account?</h3>
-                                        <p className="text-sm text-red-700 mt-1">
-                                            This action cannot be undone. All your data, including your profile, emergencies,
-                                            support requests, donations, and volunteering history will be permanently removed.
-                                        </p>
-                                        <div className="mt-4 flex space-x-3">
-                                            <button
-                                                type="button"
-                                                onClick={handleDelete}
-                                                disabled={isUpdating}
-                                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"
-                                            >
-                                                {isUpdating ? 'Deleting...' : 'Yes, delete my account'}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowDeleteConfirm(false)}
-                                                className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {success && (
-                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start">
-                                <div className="h-6 w-6 text-green-600 mr-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-medium text-green-800">{success}</h3>
-                                    <p className="text-xs text-green-700 mt-0.5">Your profile information has been updated.</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {error && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-                                <div className="h-6 w-6 text-red-600 mr-3">
-                                    <AlertCircle className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-medium text-red-800">{error}</h3>
-                                    <p className="text-xs text-red-700 mt-0.5">Please try again or contact support if the issue persists.</p>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="mb-6 flex justify-between items-center">
-                            <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
-                            {!editMode ? (
-                                <button
-                                    onClick={() => setEditMode(true)}
-                                    className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors"
-                                >
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit Profile
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => {
-                                        setEditMode(false);
-                                        setError('');
-                                    }}
-                                    className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors"
-                                >
-                                    <X className="w-4 h-4 mr-2" />
-                                    Cancel
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col lg:flex-row gap-6">
-                            {/* Profile Picture */}
-                            <div className="flex flex-col items-center lg:w-1/3">
-                                {userData.image ? (
-                                    <Image
-                                        src={userData.image}
-                                        alt="Profile"
-                                        width={200}
-                                        height={200}
-                                        className="rounded-full object-cover h-48 w-48"
-                                    />
-                                ) : (
-                                    <div className="h-48 w-48 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium text-4xl">
-                                        {userData.name?.charAt(0) || 'U'}
-                                    </div>
-                                )}
-                                <div className="mt-4 w-full max-w-xs">
-                                    <div className="bg-indigo-50 p-4 rounded-lg text-center">
-                                        <p className="text-indigo-900 mt-1">Please note DP can&apos;t be changed as its linked to your google account.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Account Details */}
-                            <div className="flex-1">
-                                {!editMode ? (
-                                    /* Read-only mode */
-                                    <div className="space-y-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-gray-500 text-sm">
-                                                    <User className="w-4 h-4 mr-2" />
-                                                    <span>Full Name</span>
-                                                </div>
-                                                <p className="font-medium text-gray-900">{userData.name || 'Not specified'}</p>
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-gray-500 text-sm">
-                                                    <Mail className="w-4 h-4 mr-2" />
-                                                    <span>Email Address</span>
-                                                </div>
-                                                <p className="font-medium text-gray-900">{userData.email || 'Not specified'}</p>
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-gray-500 text-sm">
-                                                    <Phone className="w-4 h-4 mr-2" />
-                                                    <span>Phone Number</span>
-                                                </div>
-                                                <p className="font-medium text-gray-900">{userData.phone || 'Not specified'}</p>
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-gray-500 text-sm">
-                                                    <UserCheck className="w-4 h-4 mr-2" />
-                                                    <span>Gender</span>
-                                                </div>
-                                                <p className="font-medium text-gray-900">{userData.gender || 'Not specified'}</p>
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-gray-500 text-sm">
-                                                    <Cake className="w-4 h-4 mr-2" />
-                                                    <span>Date of Birth</span>
-                                                </div>
-                                                <p className="font-medium text-gray-900">{formatDOB(userData.dateOfBirth)}</p>
-                                            </div>
-                                        </div>
-
+                    loading ? (
+                        <SkeletonAccount />
+                    ) : (
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            {showDeleteConfirm && (
+                                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                    <div className="flex items-start">
+                                        <AlertTriangle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
                                         <div>
-                                            <div className="flex items-center text-gray-500 text-sm mb-2">
-                                                <MapPin className="w-4 h-4 mr-2" />
-                                                <span>Address</span>
-                                            </div>
-
-                                            {userData.address?.street || userData.address?.city ? (
-                                                <div className="bg-gray-50 p-4 rounded-lg">
-                                                    <p className="font-medium text-gray-900">
-                                                        {userData.address?.street && <span className="block">{userData.address.street}</span>}
-                                                        {userData.address?.city && userData.address?.state && (
-                                                            <span className="block">{userData.address.city}, {userData.address.state} {userData.address.postalCode}</span>
-                                                        )}
-                                                        {userData.address?.country && <span className="block">{userData.address.country}</span>}
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <p className="text-gray-500 italic">No address specified</p>
-                                            )}
-                                        </div>
-
-                                        <div className="pt-4 border-t border-gray-200">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowDeleteConfirm(true)}
-                                                className="flex items-center text-sm font-medium text-red-600 hover:text-red-800"
-                                            >
-                                                <Trash2 className="w-4 h-4 mr-2" />
-                                                Delete Account
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    /* Edit mode */
-                                    <form onSubmit={handleUpdate} className="space-y-5">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                    <User className="w-4 h-4 mr-2" />
-                                                    Name
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={userData.name}
-                                                    onChange={(e) => setUserData({ ...userData, name: e.target.value })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                    <Mail className="w-4 h-4 mr-2" />
-                                                    Email
-                                                </label>
-                                                <input
-                                                    type="email"
-                                                    value={userData.email}
-                                                    onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                    <Phone className="w-4 h-4 mr-2" />
-                                                    Phone
-                                                </label>
-                                                <input
-                                                    type="tel"
-                                                    value={userData.phone}
-                                                    onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                    <UserCheck className="w-4 h-4 mr-2" />
-                                                    Gender
-                                                </label>
-                                                <select
-                                                    value={userData.gender}
-                                                    onChange={(e) => setUserData({ ...userData, gender: e.target.value })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            <h3 className="text-lg font-medium text-red-800">Delete your account?</h3>
+                                            <p className="text-sm text-red-700 mt-1">
+                                                This action cannot be undone. All your data, including your profile, emergencies,
+                                                support requests, donations, and volunteering history will be permanently removed.
+                                            </p>
+                                            <div className="mt-4 flex space-x-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDelete}
+                                                    disabled={isUpdating}
+                                                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"
                                                 >
-                                                    <option value="">Select</option>
-                                                    <option value="Male">Male</option>
-                                                    <option value="Female">Female</option>
-                                                    <option value="Other">Other</option>
-                                                </select>
+                                                    {isUpdating ? 'Deleting...' : 'Yes, delete my account'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowDeleteConfirm(false)}
+                                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {success && (
+                                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start">
+                                    <div className="h-6 w-6 text-green-600 mr-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                            <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-medium text-green-800">{success}</h3>
+                                        <p className="text-xs text-green-700 mt-0.5">Your profile information has been updated.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {error && (
+                                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+                                    <div className="h-6 w-6 text-red-600 mr-3">
+                                        <AlertCircle className="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                                        <p className="text-xs text-red-700 mt-0.5">Please try again or contact support if the issue persists.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="mb-6 flex justify-between items-center">
+                                <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
+                                {!editMode ? (
+                                    <button
+                                        onClick={() => setEditMode(true)}
+                                        className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors"
+                                    >
+                                        <Edit className="w-4 h-4 mr-2" />
+                                        Edit Profile
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            setEditMode(false);
+                                            setError('');
+                                        }}
+                                        className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors"
+                                    >
+                                        <X className="w-4 h-4 mr-2" />
+                                        Cancel
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col lg:flex-row gap-6">
+                                {/* Profile Picture */}
+                                <div className="flex flex-col items-center lg:w-1/3">
+                                    {userData.image ? (
+                                        <Image
+                                            src={userData.image}
+                                            alt="Profile"
+                                            width={200}
+                                            height={200}
+                                            className="rounded-full object-cover h-48 w-48"
+                                        />
+                                    ) : (
+                                        <div className="h-48 w-48 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium text-4xl">
+                                            {userData.name?.charAt(0) || 'U'}
+                                        </div>
+                                    )}
+                                    <div className="mt-4 w-full max-w-xs">
+                                        <div className="bg-indigo-50 p-4 rounded-lg text-center">
+                                            <p className="text-indigo-900 mt-1">Please note DP can&apos;t be changed as its linked to your google account.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Account Details */}
+                                <div className="flex-1">
+                                    {!editMode ? (
+                                        /* Read-only mode */
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center text-gray-500 text-sm">
+                                                        <User className="w-4 h-4 mr-2" />
+                                                        <span>Full Name</span>
+                                                    </div>
+                                                    <p className="font-medium text-gray-900">{userData.name || 'Not specified'}</p>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center text-gray-500 text-sm">
+                                                        <Mail className="w-4 h-4 mr-2" />
+                                                        <span>Email Address</span>
+                                                    </div>
+                                                    <p className="font-medium text-gray-900">{userData.email || 'Not specified'}</p>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center text-gray-500 text-sm">
+                                                        <Phone className="w-4 h-4 mr-2" />
+                                                        <span>Phone Number</span>
+                                                    </div>
+                                                    <p className="font-medium text-gray-900">{userData.phone || 'Not specified'}</p>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center text-gray-500 text-sm">
+                                                        <UserCheck className="w-4 h-4 mr-2" />
+                                                        <span>Gender</span>
+                                                    </div>
+                                                    <p className="font-medium text-gray-900">{userData.gender || 'Not specified'}</p>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center text-gray-500 text-sm">
+                                                        <Cake className="w-4 h-4 mr-2" />
+                                                        <span>Date of Birth</span>
+                                                    </div>
+                                                    <p className="font-medium text-gray-900">{formatDOB(userData.dateOfBirth)}</p>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <div className="flex items-center text-gray-500 text-sm mb-2">
+                                                    <MapPin className="w-4 h-4 mr-2" />
+                                                    <span>Address</span>
+                                                </div>
+
+                                                {userData.address?.street || userData.address?.city ? (
+                                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                                        <p className="font-medium text-gray-900">
+                                                            {userData.address?.street && <span className="block">{userData.address.street}</span>}
+                                                            {userData.address?.city && userData.address?.state && (
+                                                                <span className="block">{userData.address.city}, {userData.address.state} {userData.address.postalCode}</span>
+                                                            )}
+                                                            {userData.address?.country && <span className="block">{userData.address.country}</span>}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-gray-500 italic">No address specified</p>
+                                                )}
+                                            </div>
+
+                                            <div className="pt-4 border-t border-gray-200">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowDeleteConfirm(true)}
+                                                    className="flex items-center text-sm font-medium text-red-600 hover:text-red-800"
+                                                >
+                                                    <Trash2 className="w-4 h-4 mr-2" />
+                                                    Delete Account
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        /* Edit mode */
+                                        <form onSubmit={handleUpdate} className="space-y-5">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                        <User className="w-4 h-4 mr-2" />
+                                                        Name
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={userData.name}
+                                                        onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                        <Mail className="w-4 h-4 mr-2" />
+                                                        Email
+                                                    </label>
+                                                    <input
+                                                        type="email"
+                                                        value={userData.email}
+                                                        onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                        <Phone className="w-4 h-4 mr-2" />
+                                                        Phone
+                                                    </label>
+                                                    <input
+                                                        type="tel"
+                                                        value={userData.phone}
+                                                        onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                        <UserCheck className="w-4 h-4 mr-2" />
+                                                        Gender
+                                                    </label>
+                                                    <select
+                                                        value={userData.gender}
+                                                        onChange={(e) => setUserData({ ...userData, gender: e.target.value })}
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    >
+                                                        <option value="">Select</option>
+                                                        <option value="Male">Male</option>
+                                                        <option value="Female">Female</option>
+                                                        <option value="Other">Other</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                        <Cake className="w-4 h-4 mr-2" />
+                                                        Date of Birth
+                                                    </label>
+                                                    <input
+                                                        type="date"
+                                                        value={userData.dateOfBirth}
+                                                        onChange={(e) => setUserData({ ...userData, dateOfBirth: e.target.value })}
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                </div>
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                    <Cake className="w-4 h-4 mr-2" />
-                                                    Date of Birth
+                                                    <MapPin className="w-4 h-4 mr-2" />
+                                                    Address
                                                 </label>
-                                                <input
-                                                    type="date"
-                                                    value={userData.dateOfBirth}
-                                                    onChange={(e) => setUserData({ ...userData, dateOfBirth: e.target.value })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Street"
+                                                        value={userData.address.street}
+                                                        onChange={(e) => setUserData({ ...userData, address: { ...userData.address, street: e.target.value } })}
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="City"
+                                                        value={userData.address.city}
+                                                        onChange={(e) => setUserData({ ...userData, address: { ...userData.address, city: e.target.value } })}
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="State"
+                                                        value={userData.address.state}
+                                                        onChange={(e) => setUserData({ ...userData, address: { ...userData.address, state: e.target.value } })}
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Postal Code"
+                                                        value={userData.address.postalCode}
+                                                        onChange={(e) => setUserData({ ...userData, address: { ...userData.address, postalCode: e.target.value } })}
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Country"
+                                                        value={userData.address.country}
+                                                        onChange={(e) => setUserData({ ...userData, address: { ...userData.address, country: e.target.value } })}
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                <MapPin className="w-4 h-4 mr-2" />
-                                                Address
-                                            </label>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Street"
-                                                    value={userData.address.street}
-                                                    onChange={(e) => setUserData({ ...userData, address: { ...userData.address, street: e.target.value } })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="City"
-                                                    value={userData.address.city}
-                                                    onChange={(e) => setUserData({ ...userData, address: { ...userData.address, city: e.target.value } })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="State"
-                                                    value={userData.address.state}
-                                                    onChange={(e) => setUserData({ ...userData, address: { ...userData.address, state: e.target.value } })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Postal Code"
-                                                    value={userData.address.postalCode}
-                                                    onChange={(e) => setUserData({ ...userData, address: { ...userData.address, postalCode: e.target.value } })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Country"
-                                                    value={userData.address.country}
-                                                    onChange={(e) => setUserData({ ...userData, address: { ...userData.address, country: e.target.value } })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
+                                            <div className="flex space-x-4">
+                                                <button
+                                                    type="submit"
+                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:bg-gray-400"
+                                                    disabled={isUpdating}
+                                                >
+                                                    {isUpdating ? 'Updating...' : 'Update Profile'}
+                                                </button>
                                             </div>
-                                        </div>
-                                        <div className="flex space-x-4">
-                                            <button
-                                                type="submit"
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:bg-gray-400"
-                                                disabled={isUpdating}
-                                            >
-                                                {isUpdating ? 'Updating...' : 'Update Profile'}
-                                            </button>
-                                        </div>
-                                    </form>
-                                )}
+                                        </form>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )
                 ) : (
                     <>
                         <div className="mb-4 flex justify-center md:justify-start">
                             <div className={`inline-flex items-center px-4 py-2 rounded-full ${
                                 activeSection === 'emergencies' ? 'bg-red-50 text-red-700' :
                                     activeSection === 'supports' ? 'bg-blue-50 text-blue-700' :
-                                        activeSection === 'donations' ? 'bg-purple-50 text-purple-700' :
+                                        activeSection === 'donations' ? 'bg-green-50 text-green-700' :
                                             'bg-indigo-50 text-indigo-700'
                             }`}>
                                 {getIconForSection(activeSection)}
@@ -723,7 +811,7 @@ export default function PanelPage() {
                                     const status = item.status?.toLowerCase() || 'pending';
                                     const statusColor = getStatusColor(status);
                                     const statusTextColor = getStatusTextColor(status);
-                                    const borderColor = getBorderColor(status);
+                                    const borderColor = activeSection === 'donations' ? 'border-green-500' : getBorderColor(status);
                                     const assignee = assignees[item.assignee];
 
                                     if (activeSection === 'volunteering') {
