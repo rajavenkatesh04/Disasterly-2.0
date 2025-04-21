@@ -250,11 +250,11 @@ const StatusBadge = ({ status, itemId, onStatusChange, isDonation = false, activ
 };
 
 // Assignee popup component
-const AssigneePopup = ({ requestId, section, adminUsers, currentUser, onAssigneeChange, onClose }) => {
+const AssigneePopup = ({ requestId, section, adminUsers, currentUser, onAssigneeChange, onClose, isFullCard }) => {
     return (
-        <div className="absolute z-20 bg-white rounded-md shadow-lg border border-gray-200 p-4 w-48">
+        <div className={`bg-white rounded-md shadow-lg border border-gray-200 p-4 ${isFullCard ? 'w-full h-full flex flex-col justify-center' : 'w-48'}`}>
             <div className="flex justify-between items-center mb-2">
-                <h3 className="text-sm font-medium text-gray-900">Change Assignee</h3>
+                <h3 className="text-sm font-medium text-gray-900">Assign To</h3>
                 <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
                     <X className="w-4 h-4" />
                 </button>
@@ -265,6 +265,7 @@ const AssigneePopup = ({ requestId, section, adminUsers, currentUser, onAssignee
                     onClose();
                 }}
                 className="w-full border border-gray-300 rounded-md text-xs py-1 px-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                autoFocus
             >
                 <option value="">Unassigned</option>
                 <option value={currentUser?.userId}>You ({currentUser?.name})</option>
@@ -529,7 +530,7 @@ export default function PersonnelPage() {
     const handleRightClick = (e, requestId, section) => {
         if (section === 'emergencies' || section === 'supports') {
             e.preventDefault();
-            setShowAssigneePopup({ requestId, section, x: e.clientX, y: e.clientY });
+            setShowAssigneePopup({ requestId, section, isFullCard: true });
         }
     };
 
@@ -730,6 +731,7 @@ export default function PersonnelPage() {
 
                                 const assigneeUser = item.assignee ? adminUsers.find(user => user.userId === item.assignee) : null;
                                 const takenBy = assigneeUser ? assigneeUser.name : item.assignee ? 'Unknown User' : 'Unassigned';
+                                const isNewRequest = item.status?.toLowerCase() === 'pending' && !item.assignee;
 
                                 const userPhone = activeSection === 'emergencies' ? item.contact : item.phone || 'N/A';
                                 const requesterName = item.name || 'N/A';
@@ -760,26 +762,130 @@ export default function PersonnelPage() {
                                         className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border-l-4 ${borderColor} min-h-[200px] w-full relative`}
                                         onContextMenu={(e) => handleRightClick(e, requestId, activeSection)}
                                     >
-                                        <div className="p-4">
-                                            {(isUser || isVolunteer) ? (
-                                                <>
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <div className="flex items-center">
-                                                            <Image
-                                                                src={item.image || '/default-profile.png'}
-                                                                alt={item.name || 'Profile picture'}
-                                                                className="w-10 h-10 rounded-full mr-2 object-cover"
-                                                                width={40}
-                                                                height={40}
-                                                            />
-                                                            <div>
-                                                                <h3 className="font-semibold text-gray-900 text-sm">{item.name}</h3>
-                                                                <p className="text-xs text-gray-500 mt-0.5">{isUser ? item.userId : item.requestId}</p>
+                                        {showAssigneePopup && showAssigneePopup.requestId === requestId && showAssigneePopup.isFullCard ? (
+                                            <div className="absolute inset-0 z-10">
+                                                <AssigneePopup
+                                                    requestId={requestId}
+                                                    section={activeSection}
+                                                    adminUsers={adminUsers}
+                                                    currentUser={currentUser}
+                                                    onAssigneeChange={handleAssigneeChange}
+                                                    onClose={() => setShowAssigneePopup(null)}
+                                                    isFullCard={true}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="p-4">
+                                                {(isUser || isVolunteer) ? (
+                                                    <>
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <div className="flex items-center">
+                                                                <Image
+                                                                    src={item.image || '/default-profile.png'}
+                                                                    alt={item.name || 'Profile picture'}
+                                                                    className="w-10 h-10 rounded-full mr-2 object-cover"
+                                                                    width={40}
+                                                                    height={40}
+                                                                />
+                                                                <div>
+                                                                    <h3 className="font-semibold text-gray-900 text-sm">{item.name}</h3>
+                                                                    <p className="text-xs text-gray-500 mt-0.5">{isUser ? item.userId : item.requestId}</p>
+                                                                </div>
+                                                            </div>
+                                                            {isVolunteer && (
+                                                                <StatusBadge
+                                                                    status={item.status || 'active'}
+                                                                    itemId={requestId}
+                                                                    onStatusChange={handleStatusChange}
+                                                                    isDonation={isDonation}
+                                                                    activeSection={activeSection}
+                                                                    isOpen={isOpen}
+                                                                    setIsOpen={handleToggleOpen}
+                                                                    isUpdating={isUpdating}
+                                                                    setIsUpdating={handleSetUpdating}
+                                                                />
+                                                            )}
+                                                        </div>
+
+                                                        <div className="mb-3 space-y-1 text-xs">
+                                                            <div className="flex items-start">
+                                                                <span className="font-medium text-gray-700 w-20">Age:</span>
+                                                                <span className="text-gray-600">{calculateAge(item.dateOfBirth) ?? 'N/A'}</span>
+                                                            </div>
+                                                            <div className="flex items-start">
+                                                                <span className="font-medium text-gray-700 w-20">Gender:</span>
+                                                                <span className="text-gray-600">{item.gender || 'N/A'}</span>
+                                                            </div>
+                                                            <div className="flex items-start">
+                                                                <span className="font-medium text-gray-700 w-20">{isUser ? 'City' : 'Location'}:</span>
+                                                                <span className="text-gray-600">{item.address?.city || item.location || 'N/A'}</span>
+                                                            </div>
+                                                            <div className="flex items-start">
+                                                                <span className="font-medium text-gray-700 w-20">Email:</span>
+                                                                <span className="text-gray-600">{item.email}</span>
+                                                            </div>
+                                                            {isVolunteer && (
+                                                                <>
+                                                                    <div className="flex items-start">
+                                                                        <span className="font-medium text-gray-700 w-20">Skills:</span>
+                                                                        <span className="text-gray-600">
+                                                                            {Array.isArray(item.skills) ? item.skills.join(', ') : item.skills || 'N/A'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-start">
+                                                                        <span className="font-medium text-gray-700 w-20">Availability:</span>
+                                                                        <span className="text-gray-600">{item.availability || 'N/A'}</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            <div className="flex items-center text-gray-600 mt-1">
+                                                                <span className="font-medium text-gray-700 w-20">Created:</span>
+                                                                <span className="flex items-center">
+                                                                    <Calendar className="w-3 h-3 mr-1" />
+                                                                    {formatDate(item.createdAt || item.volunteerCreatedAt)}
+                                                                </span>
                                                             </div>
                                                         </div>
-                                                        {isVolunteer && (
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <div>
+                                                                <h3 className="font-semibold text-gray-900 text-sm">{requestId}</h3>
+                                                                {activeSection === 'emergencies' || activeSection === 'supports' ? (
+                                                                    <div className="text-xs text-gray-500 mt-0.5 flex items-center">
+                                                                        <span className="font-medium mr-1">Assignee:</span>
+                                                                        {isNewRequest ? (
+                                                                            <select
+                                                                                onChange={(e) => handleAssigneeChange(requestId, e.target.value, activeSection)}
+                                                                                className="border border-gray-300 rounded-md text-xs py-1 px-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                                            >
+                                                                                <option value="">Select Assignee</option>
+                                                                                <option value={currentUser?.userId}>You ({currentUser?.name})</option>
+                                                                                {adminUsers
+                                                                                    .filter(user => user.userId !== currentUser?.userId)
+                                                                                    .map(user => (
+                                                                                        <option key={user.userId} value={user.userId}>
+                                                                                            {user.name}
+                                                                                        </option>
+                                                                                    ))}
+                                                                            </select>
+                                                                        ) : (
+                                                                            <span className="text-gray-600">{takenBy}</span>
+                                                                        )}
+                                                                        {assigneeUpdatingStates[requestId] && (
+                                                                            <svg className="animate-spin h-4 w-4 ml-2 text-gray-500" viewBox="0 0 24 24">
+                                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                            </svg>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="text-xs text-gray-500 mt-0.5">{item.name}</p>
+                                                                )}
+                                                            </div>
                                                             <StatusBadge
-                                                                status={item.status || 'active'}
+                                                                status={item.status}
                                                                 itemId={requestId}
                                                                 onStatusChange={handleStatusChange}
                                                                 isDonation={isDonation}
@@ -789,206 +895,121 @@ export default function PersonnelPage() {
                                                                 isUpdating={isUpdating}
                                                                 setIsUpdating={handleSetUpdating}
                                                             />
-                                                        )}
-                                                    </div>
+                                                        </div>
 
-                                                    <div className="mb-3 space-y-1 text-xs">
-                                                        <div className="flex items-start">
-                                                            <span className="font-medium text-gray-700 w-20">Age:</span>
-                                                            <span className="text-gray-600">{calculateAge(item.dateOfBirth) ?? 'N/A'}</span>
-                                                        </div>
-                                                        <div className="flex items-start">
-                                                            <span className="font-medium text-gray-700 w-20">Gender:</span>
-                                                            <span className="text-gray-600">{item.gender || 'N/A'}</span>
-                                                        </div>
-                                                        <div className="flex items-start">
-                                                            <span className="font-medium text-gray-700 w-20">{isUser ? 'City' : 'Location'}:</span>
-                                                            <span className="text-gray-600">{item.address?.city || item.location || 'N/A'}</span>
-                                                        </div>
-                                                        <div className="flex items-start">
-                                                            <span className="font-medium text-gray-700 w-20">Email:</span>
-                                                            <span className="text-gray-600">{item.email}</span>
-                                                        </div>
-                                                        {isVolunteer && (
-                                                            <>
+                                                        <hr className="border-t border-gray-200 my-3" />
+
+                                                        <div className="mb-3 space-y-1 text-xs">
+                                                            {item.helpType && (
                                                                 <div className="flex items-start">
-                                                                    <span className="font-medium text-gray-700 w-20">Skills:</span>
-                                                                    <span className="text-gray-600">
-                                                                        {Array.isArray(item.skills) ? item.skills.join(', ') : item.skills || 'N/A'}
-                                                                    </span>
+                                                                    <span className="font-medium text-gray-700 w-20">Help Type:</span>
+                                                                    <span className="text-gray-600">{item.helpType}</span>
                                                                 </div>
-                                                                <div className="flex items-start">
-                                                                    <span className="font-medium text-gray-700 w-20">Availability:</span>
-                                                                    <span className="text-gray-600">{item.availability || 'N/A'}</span>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                        <div className="flex items-center text-gray-600 mt-1">
-                                                            <span className="font-medium text-gray-700 w-20">Created:</span>
-                                                            <span className="flex items-center">
-                                                                <Calendar className="w-3 h-3 mr-1" />
-                                                                {formatDate(item.createdAt || item.volunteerCreatedAt)}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <div>
-                                                            <h3 className="font-semibold text-gray-900 text-sm">{requestId}</h3>
-                                                            {activeSection === 'emergencies' || activeSection === 'supports' ? (
-                                                                <div className="text-xs text-gray-500 mt-0.5 flex items-center">
-                                                                    <span className="font-medium mr-1">Assignee:</span>
-                                                                    <span className="text-gray-600">{takenBy}</span>
-                                                                    {assigneeUpdatingStates[requestId] && (
-                                                                        <svg className="animate-spin h-4 w-4 ml-2 text-gray-500" viewBox="0 0 24 24">
-                                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                        </svg>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <p className="text-xs text-gray-500 mt-0.5">{item.name}</p>
                                                             )}
-                                                        </div>
-                                                        <StatusBadge
-                                                            status={item.status}
-                                                            itemId={requestId}
-                                                            onStatusChange={handleStatusChange}
-                                                            isDonation={isDonation}
-                                                            activeSection={activeSection}
-                                                            isOpen={isOpen}
-                                                            setIsOpen={handleToggleOpen}
-                                                            isUpdating={isUpdating}
-                                                            setIsUpdating={handleSetUpdating}
-                                                        />
-                                                    </div>
-
-                                                    <hr className="border-t border-gray-200 my-3" />
-
-                                                    <div className="mb-3 space-y-1 text-xs">
-                                                        {item.helpType && (
-                                                            <div className="flex items-start">
-                                                                <span className="font-medium text-gray-700 w-20">Help Type:</span>
-                                                                <span className="text-gray-600">{item.helpType}</span>
+                                                            {item.disaster && (
+                                                                <div className="flex items-start">
+                                                                    <span className="font-medium text-gray-700 w-20">Disaster:</span>
+                                                                    <span className="text-gray-600">{item.disaster}</span>
+                                                                </div>
+                                                            )}
+                                                            {item.urgency && (
+                                                                <div className="flex items-start">
+                                                                    <span className="font-medium text-gray-700 w-20">Urgency:</span>
+                                                                    <span className={`${
+                                                                        item.urgency.toLowerCase() === 'critical' ? 'text-red-600 font-medium' : 'text-gray-600'
+                                                                    }`}>{item.urgency}</span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-center text-gray-600 mt-1">
+                                                                {item.createdAt && (
+                                                                    <div className="flex items-center">
+                                                                        <span className="font-medium text-gray-700 w-20">Created:</span>
+                                                                        <span className="flex items-center">
+                                                                            <Calendar className="w-3 h-3 mr-1" />
+                                                                            {formatDate(item.createdAt)}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        )}
-                                                        {item.disaster && (
-                                                            <div className="flex items-start">
-                                                                <span className="font-medium text-gray-700 w-20">Disaster:</span>
-                                                                <span className="text-gray-600">{item.disaster}</span>
-                                                            </div>
-                                                        )}
-                                                        {item.urgency && (
-                                                            <div className="flex items-start">
-                                                                <span className="font-medium text-gray-700 w-20">Urgency:</span>
-                                                                <span className={`${
-                                                                    item.urgency.toLowerCase() === 'critical' ? 'text-red-600 font-medium' : 'text-gray-600'
-                                                                }`}>{item.urgency}</span>
-                                                            </div>
-                                                        )}
-                                                        <div className="flex items-center text-gray-600 mt-1">
-                                                            {item.createdAt && (
-                                                                <div className="flex items-center">
-                                                                    <span className="font-medium text-gray-700 w-20">Created:</span>
+                                                            {item.expectedResponseTime && (
+                                                                <div className="flex items-center text-gray-600">
+                                                                    <span className="font-medium text-gray-700 w-20">Deadline:</span>
                                                                     <span className="flex items-center">
-                                                                        <Calendar className="w-3 h-3 mr-1" />
-                                                                        {formatDate(item.createdAt)}
+                                                                        <Clock className="w-3 h-3 mr-1" />
+                                                                        {formatDate(item.expectedResponseTime)}
                                                                     </span>
                                                                 </div>
                                                             )}
+                                                            {timeRemaining && (
+                                                                <div className="flex items-center mt-1">
+                                                                    <span className="font-medium text-gray-700 w-20">Time Left:</span>
+                                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                                        timeRemaining.isOverdue ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                                                                    }`}>
+                                                                        {timeRemaining.text}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {item.assignee && activeSection !== 'emergencies' && activeSection !== 'supports' && (
+                                                                <div className="flex items-start">
+                                                                    <span className="font-medium text-gray-700 w-20">Assignee:</span>
+                                                                    <span className="text-gray-600">{takenBy}</span>
+                                                                </div>
+                                                            )}
+                                                            {item.location && (
+                                                                <div className="flex items-start">
+                                                                    <span className="font-medium text-gray-700 w-20">Location:</span>
+                                                                    <span className="text-gray-600">{item.location}</span>
+                                                                </div>
+                                                            )}
+                                                            {isDonation && item.amount && (
+                                                                <div className="flex items-start">
+                                                                    <span className="font-medium text-gray-700 w-20">Amount:</span>
+                                                                    <span className="text-gray-600">₹{item.amount}</span>
+                                                                </div>
+                                                            )}
+                                                            {isDonation && item.cardNumber && (
+                                                                <div className="flex items-start">
+                                                                    <span className="font-medium text-gray-700 w-20">Card:</span>
+                                                                    <span className="text-gray-600">{item.cardNumber}</span>
+                                                                </div>
+                                                            )}
+                                                            {isDonation && item.transactionId && (
+                                                                <div className="flex items-start">
+                                                                    <span className="font-medium text-gray-700 w-20">Transaction ID:</span>
+                                                                    <span className="text-gray-600">{item.transactionId}</span>
+                                                                </div>
+                                                            )}
+                                                            {(item.details || (activeSection === 'emergencies' && item.situation)) && (
+                                                                <div className="mt-2 p-2 bg-gray-50 rounded-md text-gray-700 text-xs">
+                                                                    <div className="font-medium mb-1">Details:</div>
+                                                                    <p className="line-clamp-2">{activeSection === 'emergencies' ? item.situation : item.details}</p>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        {item.expectedResponseTime && (
-                                                            <div className="flex items-center text-gray-600">
-                                                                <span className="font-medium text-gray-700 w-20">Deadline:</span>
-                                                                <span className="flex items-center">
-                                                                    <Clock className="w-3 h-3 mr-1" />
-                                                                    {formatDate(item.expectedResponseTime)}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {timeRemaining && (
-                                                            <div className="flex items-center mt-1">
-                                                                <span className="font-medium text-gray-700 w-20">Time Left:</span>
-                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                                    timeRemaining.isOverdue ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
-                                                                }`}>
-                                                                    {timeRemaining.text}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {item.assignee && activeSection !== 'emergencies' && activeSection !== 'supports' && (
-                                                            <div className="flex items-start">
-                                                                <span className="font-medium text-gray-700 w-20">Assignee:</span>
-                                                                <span className="text-gray-600">{takenBy}</span>
-                                                            </div>
-                                                        )}
-                                                        {item.location && (
-                                                            <div className="flex items-start">
-                                                                <span className="font-medium text-gray-700 w-20">Location:</span>
-                                                                <span className="text-gray-600">{item.location}</span>
-                                                            </div>
-                                                        )}
-                                                        {isDonation && item.amount && (
-                                                            <div className="flex items-start">
-                                                                <span className="font-medium text-gray-700 w-20">Amount:</span>
-                                                                <span className="text-gray-600">₹{item.amount}</span>
-                                                            </div>
-                                                        )}
-                                                        {isDonation && item.cardNumber && (
-                                                            <div className="flex items-start">
-                                                                <span className="font-medium text-gray-700 w-20">Card:</span>
-                                                                <span className="text-gray-600">{item.cardNumber}</span>
-                                                            </div>
-                                                        )}
-                                                        {isDonation && item.transactionId && (
-                                                            <div className="flex items-start">
-                                                                <span className="font-medium text-gray-700 w-20">Transaction ID:</span>
-                                                                <span className="text-gray-600">{item.transactionId}</span>
-                                                            </div>
-                                                        )}
-                                                        {(item.details || (activeSection === 'emergencies' && item.situation)) && (
-                                                            <div className="mt-2 p-2 bg-gray-50 rounded-md text-gray-700 text-xs">
-                                                                <div className="font-medium mb-1">Details:</div>
-                                                                <p className="line-clamp-2">{activeSection === 'emergencies' ? item.situation : item.details}</p>
-                                                            </div>
+                                                    </>
+                                                )}
+
+                                                <hr className="border-t border-gray-200 my-3" />
+
+                                                <div className="text-xs flex justify-between items-center">
+                                                    <div>
+                                                        <span className="text-gray-700">{userPhone}</span>
+                                                        {(activeSection === 'emergencies' || activeSection === 'supports') && (
+                                                            <span className="text-gray-700 ml-2">({requesterName})</span>
                                                         )}
                                                     </div>
-                                                </>
-                                            )}
-
-                                            <hr className="border-t border-gray-200 my-3" />
-
-                                            <div className="text-xs flex justify-between items-center">
-                                                <div>
-                                                    <span className="text-gray-700">{userPhone}</span>
-                                                    {(activeSection === 'emergencies' || activeSection === 'supports') && (
-                                                        <span className="text-gray-700 ml-2">({requesterName})</span>
+                                                    {!isDonation && (
+                                                        <button
+                                                            onClick={() => handleCall(userPhone)}
+                                                            className={`bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${isDonation ? 'hidden' : ''}`}
+                                                            disabled={!userPhone || userPhone === 'N/A'}
+                                                        >
+                                                            <Phone className={`w-4 h-4 mr-2 ${isDonation ? 'hidden' : ''}`} />
+                                                            <span className="lg:inline-block hidden">Call {isUser ? 'User' : isVolunteer ? 'Volunteer' : 'Requester'}</span>
+                                                        </button>
                                                     )}
                                                 </div>
-                                                {!isDonation && (
-                                                    <button
-                                                        onClick={() => handleCall(userPhone)}
-                                                        className={`bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${isDonation ? 'hidden' : ''}`}
-                                                        disabled={!userPhone || userPhone === 'N/A'}
-                                                    >
-                                                        <Phone className={`w-4 h-4 mr-2 ${isDonation ? 'hidden' : ''}`} />
-                                                        <span className="lg:inline-block hidden">Call {isUser ? 'User' : isVolunteer ? 'Volunteer' : 'Requester'}</span>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {showAssigneePopup && showAssigneePopup.requestId === requestId && (
-                                            <div style={{ position: 'absolute', top: showAssigneePopup.y, left: showAssigneePopup.x }}>
-                                                <AssigneePopup
-                                                    requestId={requestId}
-                                                    section={activeSection}
-                                                    adminUsers={adminUsers}
-                                                    currentUser={currentUser}
-                                                    onAssigneeChange={handleAssigneeChange}
-                                                    onClose={() => setShowAssigneePopup(null)}
-                                                />
                                             </div>
                                         )}
                                     </div>
