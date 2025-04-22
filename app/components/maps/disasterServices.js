@@ -4,22 +4,43 @@ import { env } from 'process';
 // Main function to fetch all disaster data
 export async function fetchDisasterData() {
     let allDisasters = [];
-    let sources = "USGS Earthquakes";
+    let sources = "";
 
     try {
         // Add 1.2-second delay before fetching data to allow auth/session to stabilize
         await new Promise(resolve => setTimeout(resolve, 1200));
 
-        // Fetch earthquake data (most reliable)
-        const earthquakes = await fetchUSGSEarthquakes();
-        allDisasters = [...earthquakes];
+        // Fetch USGS earthquake data
+        try {
+            const earthquakes = await fetchUSGSEarthquakes();
+            if (earthquakes && earthquakes.length > 0) {
+                allDisasters = [...earthquakes];
+                sources += "USGS Earthquakes";
+            }
+        } catch (error) {
+            console.error("Failed to fetch USGS earthquake data:", error);
+        }
+
+        // Fetch NCS earthquake data (India-focused)
+        try {
+            const response = await fetch("/api/ncs-earthquakes");
+            if (response.ok) {
+                const ncsEarthquakes = await response.json();
+                if (ncsEarthquakes && ncsEarthquakes.length > 0) {
+                    allDisasters = [...allDisasters, ...ncsEarthquakes];
+                    sources += sources ? ", NCS Earthquakes" : "NCS Earthquakes";
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch NCS earthquake data:", error);
+        }
 
         // Try to fetch tsunami data
         try {
             const tsunamis = await fetchTsunamiWarnings();
             if (tsunamis && tsunamis.length > 0) {
                 allDisasters = [...allDisasters, ...tsunamis];
-                sources += ", NOAA Tsunamis";
+                sources += sources ? ", NOAA Tsunamis" : "NOAA Tsunamis";
             }
         } catch (error) {
             console.error("Failed to fetch tsunami data:", error);
@@ -30,7 +51,7 @@ export async function fetchDisasterData() {
             const fires = await fetchWildfires();
             if (fires && fires.length > 0) {
                 allDisasters = [...allDisasters, ...fires];
-                sources += ", NASA FIRMS Wildfires";
+                sources += sources ? ", NASA FIRMS Wildfires" : "NASA FIRMS Wildfires";
             }
         } catch (error) {
             console.error("Failed to fetch wildfire data:", error);
@@ -41,7 +62,7 @@ export async function fetchDisasterData() {
             const weather = await fetchSevereWeather();
             if (weather && weather.length > 0) {
                 allDisasters = [...allDisasters, ...weather];
-                sources += ", NOAA Weather";
+                sources += sources ? ", NOAA Weather" : "NOAA Weather";
             }
         } catch (error) {
             console.error("Failed to fetch weather data:", error);
@@ -104,7 +125,8 @@ function processEarthquakeData(data) {
             magnitude: props.mag || 1,
             date: new Date(props.time).toISOString(),
             type: "earthquake",
-            url: props.url
+            url: props.url,
+            source: "USGS"
         };
     });
 }
@@ -160,7 +182,8 @@ export async function fetchTsunamiWarnings() {
                     lng: lng,
                     magnitude: 7.5,
                     date: dateObj.toISOString(),
-                    type: "tsunami"
+                    type: "tsunami",
+                    source: "NOAA"
                 };
             } catch (err) {
                 console.error("Error processing tsunami warning entry:", err);
@@ -227,7 +250,8 @@ export async function fetchWildfires() {
                     lng: lng,
                     magnitude: severity,
                     date: date,
-                    type: "fire"
+                    type: "fire",
+                    source: "NASA FIRMS"
                 };
             } catch (err) {
                 console.error("Error processing fire data row:", err);
@@ -297,7 +321,8 @@ export async function fetchSevereWeather() {
                     lng: lng,
                     magnitude: severity,
                     date: properties.sent || properties.effective || new Date().toISOString(),
-                    type: "weather"
+                    type: "weather",
+                    source: "NOAA"
                 };
             } catch (err) {
                 console.error("Error processing weather alert:", err);

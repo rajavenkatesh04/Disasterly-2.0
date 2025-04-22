@@ -11,10 +11,10 @@ const containerStyle = {
     height: "100%"
 };
 
-// Default center position
+// Default center position - Adjusted to be more centered on India for better NCS data visibility
 const defaultCenter = {
-    lat: 20,
-    lng: 0
+    lat: 22, // More centered on India
+    lng: 78  // More centered on India
 };
 
 // Map options
@@ -47,7 +47,7 @@ export default function SudoMap() {
     const [lastUpdated, setLastUpdated] = useState(null);
     const [selectedDisaster, setSelectedDisaster] = useState(null);
     const mapRef = useRef(null);
-    const hasFetched = useRef(sessionStorage.getItem("disasterDataFetched") === "true");
+    const hasFetched = useRef(false); // Changed to always fetch on initial load
 
     // Load Google Maps API
     const { isLoaded } = useJsApiLoader({
@@ -65,10 +65,14 @@ export default function SudoMap() {
 
         let color;
         let scale = 1;
+        let strokeColor = "#ffffff"; // Default stroke color
 
         // Set color and scale based on disaster type and magnitude
         switch (disaster.type) {
             case "earthquake":
+                // Different border color for different sources
+                strokeColor = disaster.source === "NCS" ? "#ff8c00" : "#ffffff";
+
                 if (disaster.magnitude >= 6.0) {
                     color = "#d7191c"; // Red for major
                     scale = 1.2;
@@ -107,12 +111,12 @@ export default function SudoMap() {
         // Size based on magnitude and type
         const size = Math.max(disaster.magnitude * 2, 5) * scale;
 
-        // Create SVG circle
+        // Create SVG circle with stroke color based on source
         const svg = `
-            <svg height="${size * 2}" width="${size * 2}" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="${size}" cy="${size}" r="${size}" fill="${color}" fill-opacity="0.7" stroke="white" stroke-width="1" />
-            </svg>
-        `;
+        <svg height="${size * 2}" width="${size * 2}" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="${size}" cy="${size}" r="${size}" fill="${color}" fill-opacity="0.7" stroke="${strokeColor}" stroke-width="1.5" />
+        </svg>
+    `;
 
         return {
             url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
@@ -123,7 +127,6 @@ export default function SudoMap() {
     };
 
     const loadDisasterData = async () => {
-        if (hasFetched.current) return; // Skip if already fetched this session
         setLoading(true);
         try {
             const { data, sources, timestamp } = await fetchDisasterData();
@@ -149,7 +152,6 @@ export default function SudoMap() {
             setDataSource(sources);
             setLastUpdated(timestamp);
             setError(null);
-            hasFetched.current = true;
             sessionStorage.setItem("disasterDataFetched", "true");
         } catch (err) {
             console.error("Error refreshing disaster data:", err);
@@ -161,6 +163,13 @@ export default function SudoMap() {
 
     useEffect(() => {
         loadDisasterData();
+
+        // Add auto-refresh every 15 minutes
+        const intervalId = setInterval(() => {
+            refreshData();
+        }, 15 * 60 * 1000);
+
+        return () => clearInterval(intervalId);
     }, []);
 
     return (
@@ -169,7 +178,7 @@ export default function SudoMap() {
                 <GoogleMap
                     mapContainerStyle={containerStyle}
                     center={defaultCenter}
-                    zoom={2}
+                    zoom={3} // Increased default zoom level for better visibility of India
                     options={mapOptions}
                     onLoad={onMapLoad}
                 >
@@ -191,6 +200,7 @@ export default function SudoMap() {
                                 <h3 className="font-bold text-sm">{selectedDisaster.title}</h3>
                                 <p className="text-xs mt-1">{selectedDisaster.description}</p>
                                 <p className="text-xs mt-1"><strong>Date:</strong> {new Date(selectedDisaster.date).toLocaleString()}</p>
+                                <p className="text-xs mt-1"><strong>Source:</strong> {selectedDisaster.source || "Unknown"}</p>
                                 {selectedDisaster.url && (
                                     <p className="text-xs mt-1">
                                         <a href={selectedDisaster.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">More Info</a>
