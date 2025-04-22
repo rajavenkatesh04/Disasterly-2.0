@@ -7,10 +7,23 @@ import EmergencyContacts from "@/app/components/EmergencyContacts";
 // Dynamically import the Google Maps implementation with SSR disabled
 const SudoMap = dynamic(() => import("@/app/components/maps/SudoMap"), { ssr: false });
 
+// Placeholder for auth hook (replace with your actual auth logic)
+const useAuth = () => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    useEffect(() => {
+        // Simulate auth check (replace with real auth logic)
+        setTimeout(() => setIsAuthenticated(true), 2000); // Example: 2s auth delay
+    }, []);
+    return isAuthenticated;
+};
+
 export default function HomePage() {
     const [mapHeight, setMapHeight] = useState("400px");
+    const isAuthenticated = useAuth(); // Check auth status
 
     useEffect(() => {
+        if (!isAuthenticated) return;
+
         const updateMapHeight = () => {
             if (window.innerWidth >= 768) {
                 const rightColumnHeight = document.getElementById("rightColumn")?.clientHeight;
@@ -27,7 +40,9 @@ export default function HomePage() {
 
         window.addEventListener("resize", updateMapHeight);
         return () => window.removeEventListener("resize", updateMapHeight);
-    }, []);
+    }, [isAuthenticated]);
+
+    if (!isAuthenticated) return null;
 
     return (
         <div className="container mx-auto px-4 py-6">

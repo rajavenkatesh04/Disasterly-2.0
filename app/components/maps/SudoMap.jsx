@@ -47,6 +47,7 @@ export default function SudoMap() {
     const [lastUpdated, setLastUpdated] = useState(null);
     const [selectedDisaster, setSelectedDisaster] = useState(null);
     const mapRef = useRef(null);
+    const hasFetched = useRef(sessionStorage.getItem("disasterDataFetched") === "true");
 
     // Load Google Maps API
     const { isLoaded } = useJsApiLoader({
@@ -121,28 +122,45 @@ export default function SudoMap() {
         };
     };
 
-    // Load disaster data
+    const loadDisasterData = async () => {
+        if (hasFetched.current) return; // Skip if already fetched this session
+        setLoading(true);
+        try {
+            const { data, sources, timestamp } = await fetchDisasterData();
+            setDisasters(data);
+            setDataSource(sources);
+            setLastUpdated(timestamp);
+            setError(null);
+            hasFetched.current = true;
+            sessionStorage.setItem("disasterDataFetched", "true");
+        } catch (err) {
+            console.error("Error loading disaster data:", err);
+            setError("Failed to load disaster data. Please try again later.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const refreshData = async () => {
+        setLoading(true);
+        try {
+            const { data, sources, timestamp } = await fetchDisasterData();
+            setDisasters(data);
+            setDataSource(sources);
+            setLastUpdated(timestamp);
+            setError(null);
+            hasFetched.current = true;
+            sessionStorage.setItem("disasterDataFetched", "true");
+        } catch (err) {
+            console.error("Error refreshing disaster data:", err);
+            setError("Failed to refresh disaster data. Please try again later.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const loadDisasterData = async () => {
-            setLoading(true);
-            try {
-                const { data, sources, timestamp } = await fetchDisasterData();
-                setDisasters(data);
-                setDataSource(sources);
-                setLastUpdated(timestamp);
-                setError(null);
-            } catch (err) {
-                console.error("Error loading disaster data:", err);
-                setError("Failed to load disaster data. Please try again later.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
         loadDisasterData();
-        const interval = setInterval(loadDisasterData, 5 * 60 * 1000); // Update every 5 minutes
-
-        return () => clearInterval(interval);
     }, []);
 
     return (
@@ -175,14 +193,7 @@ export default function SudoMap() {
                                 <p className="text-xs mt-1"><strong>Date:</strong> {new Date(selectedDisaster.date).toLocaleString()}</p>
                                 {selectedDisaster.url && (
                                     <p className="text-xs mt-1">
-                                        <a
-                                            href={selectedDisaster.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-blue-500 hover:underline"
-                                        >
-                                            More Info
-                                        </a>
+                                        <a href={selectedDisaster.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">More Info</a>
                                     </p>
                                 )}
                             </div>
@@ -211,8 +222,14 @@ export default function SudoMap() {
                 </div>
             )}
 
-            <div className="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-75 text-white p-1.5 text-xs text-center z-10">
-                Data Sources: {dataSource} | Last Updated: {lastUpdated || "Loading..."}
+            <div className="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-75 text-white p-1.5 text-xs text-center z-10 flex justify-between items-center">
+                <span>Data Sources: {dataSource} | Last Updated: {lastUpdated || "Loading..."}</span>
+                <button
+                    onClick={refreshData}
+                    className="bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded ml-2"
+                >
+                    Refresh Data
+                </button>
             </div>
 
             <DisasterLegend />

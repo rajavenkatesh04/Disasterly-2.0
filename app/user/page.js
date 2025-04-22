@@ -28,6 +28,19 @@ const SkeletonCard = () => (
     </div>
 );
 
+// Component for account skeleton loader
+const AccountSkeleton = () => (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
+        <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+        <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+        <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+    </div>
+);
+
 export default function PanelPage() {
     const { data: session, status, update } = useSession();
     const [activeSection, setActiveSection] = useState('emergencies');
@@ -146,7 +159,7 @@ export default function PanelPage() {
         switch (status?.toLowerCase()) {
             case 'pending': return 'bg-amber-100 text-amber-800 border-amber-200';
             case 'in progress': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+            case 'resolved': return 'bg-green-100 text-green-800 border-green-200';
             case 'urgent': case 'critical': return 'bg-red-100 text-red-800 border-red-200';
             default: return 'bg-gray-100 text-gray-800 border-gray-200';
         }
@@ -156,7 +169,7 @@ export default function PanelPage() {
         switch (status?.toLowerCase()) {
             case 'pending': return 'border-amber-500';
             case 'in progress': return 'border-blue-500';
-            case 'completed': return 'border-green-500';
+            case 'resolved': return 'border-green-500';
             case 'urgent': case 'critical': return 'border-red-500';
             default: return 'border-gray-300';
         }
@@ -166,7 +179,7 @@ export default function PanelPage() {
         switch (status?.toLowerCase()) {
             case 'pending': return 'text-amber-800';
             case 'in progress': return 'text-blue-800';
-            case 'completed': return 'text-green-800';
+            case 'resolved': return 'text-green-800';
             case 'urgent': case 'critical': return 'text-red-800';
             default: return 'text-gray-800';
         }
@@ -269,7 +282,11 @@ export default function PanelPage() {
         }
     };
 
-    if (status === 'loading') return <div className="p-6"><Skeleton height={400} /></div>;
+    if (status === 'loading') return (
+        <div className="p-6 flex items-center justify-center">
+            <div className="loader"></div>
+        </div>
+    );
     if (status === 'unauthenticated') return <div className="p-6 text-center text-gray-600">Please log in to view your panel.</div>;
 
     return (
@@ -303,6 +320,7 @@ export default function PanelPage() {
                                     <button
                                         onClick={() => {
                                             setActiveSection(section);
+                                            setIsSidebarOpen(false); // Auto-close sidebar in mobile mode
                                             if (section === 'account') {
                                                 setEditMode(false);
                                                 setShowDeleteConfirm(false);
@@ -378,317 +396,323 @@ export default function PanelPage() {
 
                 {activeSection === 'account' ? (
                     <div className="bg-white rounded-xl shadow-sm p-6">
-                        {showDeleteConfirm && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                <div className="flex items-start">
-                                    <AlertTriangle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
-                                    <div>
-                                        <h3 className="text-lg font-medium text-red-800">Delete your account?</h3>
-                                        <p className="text-sm text-red-700 mt-1">
-                                            This action cannot be undone. All your data, including your profile, emergencies,
-                                            support requests, donations, and volunteering history will be permanently removed.
-                                        </p>
-                                        <div className="mt-4 flex space-x-3">
-                                            <button
-                                                type="button"
-                                                onClick={handleDelete}
-                                                disabled={isUpdating}
-                                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"
-                                            >
-                                                {isUpdating ? 'Deleting...' : 'Yes, delete my account'}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowDeleteConfirm(false)}
-                                                className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium"
-                                            >
-                                                Cancel
-                                            </button>
+                        {loading ? (
+                            <AccountSkeleton />
+                        ) : (
+                            <>
+                                {showDeleteConfirm && (
+                                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                        <div className="flex items-start">
+                                            <AlertTriangle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
+                                            <div>
+                                                <h3 className="text-lg font-medium text-red-800">Delete your account?</h3>
+                                                <p className="text-sm text-red-700 mt-1">
+                                                    This action cannot be undone. All your data, including your profile, emergencies,
+                                                    support requests, donations, and volunteering history will be permanently removed.
+                                                </p>
+                                                <div className="mt-4 flex space-x-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleDelete}
+                                                        disabled={isUpdating}
+                                                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"
+                                                    >
+                                                        {isUpdating ? 'Deleting...' : 'Yes, delete my account'}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowDeleteConfirm(false)}
+                                                        className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {success && (
-                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start">
-                                <div className="h-6 w-6 text-green-600 mr-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-medium text-green-800">{success}</h3>
-                                    <p className="text-xs text-green-700 mt-0.5">Your profile information has been updated.</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {error && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-                                <div className="h-6 w-6 text-red-600 mr-3">
-                                    <AlertCircle className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-medium text-red-800">{error}</h3>
-                                    <p className="text-xs text-red-700 mt-0.5">Please try again or contact support if the issue persists.</p>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="mb-6 flex justify-between items-center">
-                            <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
-                            {!editMode ? (
-                                <button
-                                    onClick={() => setEditMode(true)}
-                                    className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors"
-                                >
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit Profile
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => {
-                                        setEditMode(false);
-                                        setError('');
-                                    }}
-                                    className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors"
-                                >
-                                    <X className="w-4 h-4 mr-2" />
-                                    Cancel
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col lg:flex-row gap-6">
-                            {/* Profile Picture */}
-                            <div className="flex flex-col items-center lg:w-1/3">
-                                {userData.image ? (
-                                    <Image
-                                        src={userData.image}
-                                        alt="Profile"
-                                        width={200}
-                                        height={200}
-                                        className="rounded-full object-cover h-48 w-48"
-                                    />
-                                ) : (
-                                    <div className="h-48 w-48 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium text-4xl">
-                                        {userData.name?.charAt(0) || 'U'}
                                     </div>
                                 )}
-                                <div className="mt-4 w-full max-w-xs">
-                                    <div className="bg-indigo-50 p-4 rounded-lg text-center">
-                                        <p className="text-indigo-900 mt-1">Please note DP can&apos;t be changed as its linked to your google account.</p>
+
+                                {success && (
+                                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start">
+                                        <div className="h-6 w-6 text-green-600 mr-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-medium text-green-800">{success}</h3>
+                                            <p className="text-xs text-green-700 mt-0.5">Your profile information has been updated.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {error && (
+                                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+                                        <div className="h-6 w-6 text-red-600 mr-3">
+                                            <AlertCircle className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                                            <p className="text-xs text-red-700 mt-0.5">Please try again or contact support if the issue persists.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mb-6 flex justify-between items-center">
+                                    <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
+                                    {!editMode ? (
+                                        <button
+                                            onClick={() => setEditMode(true)}
+                                            className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors"
+                                        >
+                                            <Edit className="w-4 h-4 mr-2" />
+                                            Edit Profile
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                setEditMode(false);
+                                                setError('');
+                                            }}
+                                            className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors"
+                                        >
+                                            <X className="w-4 h-4 mr-2" />
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col lg:flex-row gap-6">
+                                    {/* Profile Picture */}
+                                    <div className="flex flex-col items-center lg:w-1/3">
+                                        {userData.image ? (
+                                            <Image
+                                                src={userData.image}
+                                                alt="Profile"
+                                                width={200}
+                                                height={200}
+                                                className="rounded-full object-cover h-48 w-48"
+                                            />
+                                        ) : (
+                                            <div className="h-48 w-48 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium text-4xl">
+                                                {userData.name?.charAt(0) || 'U'}
+                                            </div>
+                                        )}
+                                        <div className="mt-4 w-full max-w-xs">
+                                            <div className="bg-indigo-50 p-4 rounded-lg text-center">
+                                                <p className="text-indigo-900 mt-1">Please note DP can&apos;t be changed as its linked to your google account.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Account Details */}
+                                    <div className="flex-1">
+                                        {!editMode ? (
+                                            /* Read-only mode */
+                                            <div className="space-y-6">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center text-gray-500 text-sm">
+                                                            <User className="w-4 h-4 mr-2" />
+                                                            <span>Full Name</span>
+                                                        </div>
+                                                        <p className="font-medium text-gray-900">{userData.name || 'Not specified'}</p>
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center text-gray-500 text-sm">
+                                                            <Mail className="w-4 h-4 mr-2" />
+                                                            <span>Email Address</span>
+                                                        </div>
+                                                        <p className="font-medium text-gray-900">{userData.email || 'Not specified'}</p>
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center text-gray-500 text-sm">
+                                                            <Phone className="w-4 h-4 mr-2" />
+                                                            <span>Phone Number</span>
+                                                        </div>
+                                                        <p className="font-medium text-gray-900">{userData.phone || 'Not specified'}</p>
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center text-gray-500 text-sm">
+                                                            <UserCheck className="w-4 h-4 mr-2" />
+                                                            <span>Gender</span>
+                                                        </div>
+                                                        <p className="font-medium text-gray-900">{userData.gender || 'Not specified'}</p>
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center text-gray-500 text-sm">
+                                                            <Cake className="w-4 h-4 mr-2" />
+                                                            <span>Date of Birth</span>
+                                                        </div>
+                                                        <p className="font-medium text-gray-900">{formatDOB(userData.dateOfBirth)}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="flex items-center text-gray-500 text-sm mb-2">
+                                                        <MapPin className="w-4 h-4 mr-2" />
+                                                        <span>Address</span>
+                                                    </div>
+
+                                                    {userData.address?.street || userData.address?.city ? (
+                                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                                            <p className="font-medium text-gray-900">
+                                                                {userData.address?.street && <span className="block">{userData.address.street}</span>}
+                                                                {userData.address?.city && userData.address?.state && (
+                                                                    <span className="block">{userData.address.city}, {userData.address.state} {userData.address.postalCode}</span>
+                                                                )}
+                                                                {userData.address?.country && <span className="block">{userData.address.country}</span>}
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-gray-500 italic">No address specified</p>
+                                                    )}
+                                                </div>
+
+                                                <div className="pt-4 border-t border-gray-200">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowDeleteConfirm(true)}
+                                                        className="flex items-center text-sm font-medium text-red-600 hover:text-red-800"
+                                                    >
+                                                        <Trash2 className="w-4 h-4 mr-2" />
+                                                        Delete Account
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* Edit mode */
+                                            <form onSubmit={handleUpdate} className="space-y-5">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                            <User className="w-4 h-4 mr-2" />
+                                                            Name
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={userData.name}
+                                                            onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                            <Mail className="w-4 h-4 mr-2" />
+                                                            Email
+                                                        </label>
+                                                        <input
+                                                            type="email"
+                                                            value={userData.email}
+                                                            onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                            <Phone className="w-4 h-4 mr-2" />
+                                                            Phone
+                                                        </label>
+                                                        <input
+                                                            type="tel"
+                                                            value={userData.phone}
+                                                            onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                            <UserCheck className="w-4 h-4 mr-2" />
+                                                            Gender
+                                                        </label>
+                                                        <select
+                                                            value={userData.gender}
+                                                            onChange={(e) => setUserData({ ...userData, gender: e.target.value })}
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        >
+                                                            <option value="">Select</option>
+                                                            <option value="Male">Male</option>
+                                                            <option value="Female">Female</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                            <Cake className="w-4 h-4 mr-2" />
+                                                            Date of Birth
+                                                        </label>
+                                                        <input
+                                                            type="date"
+                                                            value={userData.dateOfBirth}
+                                                            onChange={(e) => setUserData({ ...userData, dateOfBirth: e.target.value })}
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                        <MapPin className="w-4 h-4 mr-2" />
+                                                        Address
+                                                    </label>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Street"
+                                                            value={userData.address.street}
+                                                            onChange={(e) => setUserData({ ...userData, address: { ...userData.address, street: e.target.value } })}
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="City"
+                                                            value={userData.address.city}
+                                                            onChange={(e) => setUserData({ ...userData, address: { ...userData.address, city: e.target.value } })}
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="State"
+                                                            value={userData.address.state}
+                                                            onChange={(e) => setUserData({ ...userData, address: { ...userData.address, state: e.target.value } })}
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Postal Code"
+                                                            value={userData.address.postalCode}
+                                                            onChange={(e) => setUserData({ ...userData, address: { ...userData.address, postalCode: e.target.value } })}
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Country"
+                                                            value={userData.address.country}
+                                                            onChange={(e) => setUserData({ ...userData, address: { ...userData.address, country: e.target.value } })}
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="flex space-x-4">
+                                                    <button
+                                                        type="submit"
+                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:bg-gray-400"
+                                                        disabled={isUpdating}
+                                                    >
+                                                        {isUpdating ? 'Updating...' : 'Update Profile'}
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        )}
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Account Details */}
-                            <div className="flex-1">
-                                {!editMode ? (
-                                    /* Read-only mode */
-                                    <div className="space-y-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-gray-500 text-sm">
-                                                    <User className="w-4 h-4 mr-2" />
-                                                    <span>Full Name</span>
-                                                </div>
-                                                <p className="font-medium text-gray-900">{userData.name || 'Not specified'}</p>
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-gray-500 text-sm">
-                                                    <Mail className="w-4 h-4 mr-2" />
-                                                    <span>Email Address</span>
-                                                </div>
-                                                <p className="font-medium text-gray-900">{userData.email || 'Not specified'}</p>
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-gray-500 text-sm">
-                                                    <Phone className="w-4 h-4 mr-2" />
-                                                    <span>Phone Number</span>
-                                                </div>
-                                                <p className="font-medium text-gray-900">{userData.phone || 'Not specified'}</p>
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-gray-500 text-sm">
-                                                    <UserCheck className="w-4 h-4 mr-2" />
-                                                    <span>Gender</span>
-                                                </div>
-                                                <p className="font-medium text-gray-900">{userData.gender || 'Not specified'}</p>
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <div className="flex items-center text-gray-500 text-sm">
-                                                    <Cake className="w-4 h-4 mr-2" />
-                                                    <span>Date of Birth</span>
-                                                </div>
-                                                <p className="font-medium text-gray-900">{formatDOB(userData.dateOfBirth)}</p>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <div className="flex items-center text-gray-500 text-sm mb-2">
-                                                <MapPin className="w-4 h-4 mr-2" />
-                                                <span>Address</span>
-                                            </div>
-
-                                            {userData.address?.street || userData.address?.city ? (
-                                                <div className="bg-gray-50 p-4 rounded-lg">
-                                                    <p className="font-medium text-gray-900">
-                                                        {userData.address?.street && <span className="block">{userData.address.street}</span>}
-                                                        {userData.address?.city && userData.address?.state && (
-                                                            <span className="block">{userData.address.city}, {userData.address.state} {userData.address.postalCode}</span>
-                                                        )}
-                                                        {userData.address?.country && <span className="block">{userData.address.country}</span>}
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <p className="text-gray-500 italic">No address specified</p>
-                                            )}
-                                        </div>
-
-                                        <div className="pt-4 border-t border-gray-200">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowDeleteConfirm(true)}
-                                                className="flex items-center text-sm font-medium text-red-600 hover:text-red-800"
-                                            >
-                                                <Trash2 className="w-4 h-4 mr-2" />
-                                                Delete Account
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    /* Edit mode */
-                                    <form onSubmit={handleUpdate} className="space-y-5">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                    <User className="w-4 h-4 mr-2" />
-                                                    Name
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={userData.name}
-                                                    onChange={(e) => setUserData({ ...userData, name: e.target.value })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                    <Mail className="w-4 h-4 mr-2" />
-                                                    Email
-                                                </label>
-                                                <input
-                                                    type="email"
-                                                    value={userData.email}
-                                                    onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                    <Phone className="w-4 h-4 mr-2" />
-                                                    Phone
-                                                </label>
-                                                <input
-                                                    type="tel"
-                                                    value={userData.phone}
-                                                    onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                    <UserCheck className="w-4 h-4 mr-2" />
-                                                    Gender
-                                                </label>
-                                                <select
-                                                    value={userData.gender}
-                                                    onChange={(e) => setUserData({ ...userData, gender: e.target.value })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                >
-                                                    <option value="">Select</option>
-                                                    <option value="Male">Male</option>
-                                                    <option value="Female">Female</option>
-                                                    <option value="Other">Other</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                    <Cake className="w-4 h-4 mr-2" />
-                                                    Date of Birth
-                                                </label>
-                                                <input
-                                                    type="date"
-                                                    value={userData.dateOfBirth}
-                                                    onChange={(e) => setUserData({ ...userData, dateOfBirth: e.target.value })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                                <MapPin className="w-4 h-4 mr-2" />
-                                                Address
-                                            </label>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Street"
-                                                    value={userData.address.street}
-                                                    onChange={(e) => setUserData({ ...userData, address: { ...userData.address, street: e.target.value } })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="City"
-                                                    value={userData.address.city}
-                                                    onChange={(e) => setUserData({ ...userData, address: { ...userData.address, city: e.target.value } })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="State"
-                                                    value={userData.address.state}
-                                                    onChange={(e) => setUserData({ ...userData, address: { ...userData.address, state: e.target.value } })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Postal Code"
-                                                    value={userData.address.postalCode}
-                                                    onChange={(e) => setUserData({ ...userData, address: { ...userData.address, postalCode: e.target.value } })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Country"
-                                                    value={userData.address.country}
-                                                    onChange={(e) => setUserData({ ...userData, address: { ...userData.address, country: e.target.value } })}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="flex space-x-4">
-                                            <button
-                                                type="submit"
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:bg-gray-400"
-                                                disabled={isUpdating}
-                                            >
-                                                {isUpdating ? 'Updating...' : 'Update Profile'}
-                                            </button>
-                                        </div>
-                                    </form>
-                                )}
-                            </div>
-                        </div>
+                            </>
+                        )}
                     </div>
                 ) : (
                     <>
