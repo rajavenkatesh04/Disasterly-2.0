@@ -152,7 +152,7 @@ export default function DonatePage() {
     }, [session, status]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 mt-12">
             <main className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
                 {/* Back Button */}
                 <div className="mb-6">
