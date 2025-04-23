@@ -229,10 +229,10 @@ export default function PanelPage() {
 
     const getEmptyMessage = (section) => {
         switch (section) {
-            case 'emergencies': return "You haven't raised any emergency requests yet.";
-            case 'supports': return "You haven't raised any support requests yet.";
-            case 'donations': return "You haven't made any donations yet.";
-            case 'volunteering': return "You haven't participated in any volunteering activities yet.";
+            case 'emergencies': return "You haven&apos;t raised any emergency requests yet.";
+            case 'supports': return "You haven&apos;t raised any support requests yet.";
+            case 'donations': return "You haven&apos;t made any donations yet.";
+            case 'volunteering': return "You haven&apos;t participated in any volunteering activities yet.";
             default: return "No data to display.";
         }
     };
@@ -558,7 +558,7 @@ export default function PanelPage() {
                                         )}
                                         <div className="mt-4 w-full max-w-xs">
                                             <div className="bg-indigo-50 p-4 rounded-lg text-center">
-                                                <p className="text-indigo-900 mt-1">Please note DP can't be changed as its linked to your google account.</p>
+                                                <p className="text-indigo-900 mt-1">Please note DP can&apos;t be changed as its linked to your google account.</p>
                                             </div>
                                         </div>
                                     </div>
