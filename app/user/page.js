@@ -43,7 +43,7 @@ const AccountSkeleton = () => (
 
 export default function PanelPage() {
     const { data: session, status, update } = useSession();
-    const [activeSection, setActiveSection] = useState('emergencies');
+    const [activeSection, setActiveSection] = useState('account');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [emergencies, setEmergencies] = useState([]);
     const [supports, setSupports] = useState([]);
