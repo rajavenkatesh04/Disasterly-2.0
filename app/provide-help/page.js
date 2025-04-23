@@ -203,7 +203,7 @@ const ProvidePage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white mt-20">
+        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
             {/* Top Navigation */}
             <div className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
