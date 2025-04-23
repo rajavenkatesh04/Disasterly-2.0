@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import Navbar from "@/app/components/Navbar";
 
 export const metadata = {
@@ -27,6 +28,7 @@ export default function RootLayout({ children }) {
             {/*<Navbar />*/}
             {children}
             <Analytics />
+            <SpeedInsights />
         </Providers>
         </body>
         </html>
