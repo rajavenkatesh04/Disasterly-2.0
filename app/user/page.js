@@ -20,7 +20,7 @@ const handleCall = (phone) => {
 
 // Component for skeleton loader cards
 const SkeletonCard = () => (
-    <div className="bg-white rounded-xl shadow-sm p-4 mb-4 min-h-[200px] w-full">
+    <div className="bg-white rounded-xl shadow-sm p-4 mb-4 min-h-[200px] w-full animate-pulse">
         <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
         <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
         <div className="h-16 bg-gray-100 rounded mb-3"></div>
@@ -30,7 +30,7 @@ const SkeletonCard = () => (
 
 // Component for account skeleton loader
 const AccountSkeleton = () => (
-    <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
         <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
         <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
@@ -50,6 +50,7 @@ export default function PanelPage() {
     const [donations, setDonations] = useState([]);
     const [volunteering, setVolunteering] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [progress, setProgress] = useState(0);
     const [assignees, setAssignees] = useState({});
     const [userData, setUserData] = useState({
         name: '',
@@ -71,23 +72,41 @@ export default function PanelPage() {
         if (status === 'authenticated' && session?.user?.userId) {
             const fetchData = async () => {
                 setLoading(true);
+                const totalSteps = 5; // Number of API calls
+                let completedSteps = 0;
+
+                const updateProgress = () => {
+                    completedSteps++;
+                    setProgress((completedSteps / totalSteps) * 100);
+                };
+
+                const fetchWithProgress = async (url, errorMessage) => {
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error(`${errorMessage}: ${res.statusText}`);
+                    updateProgress();
+                    return await res.json();
+                };
+
                 try {
                     // Fetch emergencies for the user
-                    const emergenciesRes = await fetch(`/api/emergencies?userId=${session.user.userId}`);
-                    if (!emergenciesRes.ok) throw new Error('Failed to fetch emergencies');
-                    const emergenciesData = await emergenciesRes.json();
+                    const emergenciesData = await fetchWithProgress(
+                        `/api/emergencies?userId=${session.user.userId}`,
+                        'Failed to fetch emergencies'
+                    );
                     setEmergencies(emergenciesData);
 
                     // Fetch supports for the user
-                    const supportsRes = await fetch(`/api/supports?userId=${session.user.userId}`);
-                    if (!supportsRes.ok) throw new Error('Failed to fetch supports');
-                    const supportsData = await supportsRes.json();
+                    const supportsData = await fetchWithProgress(
+                        `/api/supports?userId=${session.user.userId}`,
+                        'Failed to fetch supports'
+                    );
                     setSupports(supportsData);
 
                     // Fetch donations for the user
-                    const donationsRes = await fetch(`/api/donations?userId=${session.user.userId}`);
-                    if (!donationsRes.ok) throw new Error('Failed to fetch donations');
-                    const donationsData = await donationsRes.json();
+                    const donationsData = await fetchWithProgress(
+                        `/api/donations?userId=${session.user.userId}`,
+                        'Failed to fetch donations'
+                    );
                     setDonations(donationsData);
 
                     // Mock volunteering data
@@ -95,6 +114,7 @@ export default function PanelPage() {
                         { id: 'VOL1', event: 'Assam Floods Cleanup', date: '2025-03-15', hours: 4, userId: session.user.userId },
                         { id: 'VOL2', event: 'Kerala Relief Camp', date: '2024-12-10', hours: 6, userId: session.user.userId },
                     ].filter(v => v.userId === session.user.userId));
+                    updateProgress();
 
                     // Fetch assignees for emergencies and supports
                     const assigneeIds = [...emergenciesData, ...supportsData]
@@ -121,30 +141,31 @@ export default function PanelPage() {
                     } else {
                         setAssignees({});
                     }
+                    updateProgress();
 
                     // Fetch user data for account section from new endpoint
-                    const userRes = await fetch('/api/profilethings');
-                    if (!userRes.ok) throw new Error('Failed to fetch user data');
-                    const userData = await userRes.json();
+                    const userDataResponse = await fetchWithProgress('/api/profilethings', 'Failed to fetch user data');
                     setUserData({
-                        name: userData.name || '',
-                        email: userData.email || '',
-                        image: userData.image || '',
-                        phone: userData.phone || '',
-                        gender: userData.gender || '',
-                        dateOfBirth: userData.dateOfBirth ? new Date(userData.dateOfBirth).toISOString().split('T')[0] : '',
+                        name: userDataResponse.name || '',
+                        email: userDataResponse.email || '',
+                        image: userDataResponse.image || '',
+                        phone: userDataResponse.phone || '',
+                        gender: userDataResponse.gender || '',
+                        dateOfBirth: userDataResponse.dateOfBirth ? new Date(userDataResponse.dateOfBirth).toISOString().split('T')[0] : '',
                         address: {
-                            street: userData.address?.street || '',
-                            city: userData.address?.city || '',
-                            state: userData.address?.state || '',
-                            postalCode: userData.address?.postalCode || '',
-                            country: userData.address?.country || '',
+                            street: userDataResponse.address?.street || '',
+                            city: userDataResponse.address?.city || '',
+                            state: userDataResponse.address?.state || '',
+                            postalCode: userDataResponse.address?.postalCode || '',
+                            country: userDataResponse.address?.country || '',
                         },
                     });
                 } catch (error) {
                     console.error('Error fetching data:', error);
+                    alert(`Error fetching data: ${error.message}`);
                 } finally {
                     setLoading(false);
+                    setProgress(100);
                 }
             };
             fetchData();
@@ -203,6 +224,16 @@ export default function PanelPage() {
             case 'donations': return donations;
             case 'volunteering': return volunteering;
             default: return [];
+        }
+    };
+
+    const getEmptyMessage = (section) => {
+        switch (section) {
+            case 'emergencies': return "You haven't raised any emergency requests yet.";
+            case 'supports': return "You haven't raised any support requests yet.";
+            case 'donations': return "You haven't made any donations yet.";
+            case 'volunteering': return "You haven't participated in any volunteering activities yet.";
+            default: return "No data to display.";
         }
     };
 
@@ -282,16 +313,34 @@ export default function PanelPage() {
         }
     };
 
-    if (status === 'loading') return (
-        <div className="p-6 flex items-center justify-center">
-            <div className="loader"></div>
-        </div>
+    if (status === 'loading' || (status === 'authenticated' && loading)) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+                <div className="text-center w-full max-w-4xl">
+                    <div className="mb-4">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                                style={{ width: `${progress}%` }}
+                            ></div>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2">Loading data... {Math.round(progress)}%</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Array(6).fill().map((_, i) => <SkeletonCard key={`skeleton-${i}`} />)}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (status === 'unauthenticated') return (
+        <div className="p-6 text-center text-gray-600">Please log in to view your panel.</div>
     );
-    if (status === 'unauthenticated') return <div className="p-6 text-center text-gray-600">Please log in to view your panel.</div>;
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-800 flex flex-col md:flex-row">
-            {isSidebarOpen && (
+            {isSidebarOpen && activeSection === 'account' && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
                     onClick={() => setIsSidebarOpen(false)}
@@ -303,12 +352,21 @@ export default function PanelPage() {
                 isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
             } md:translate-x-0 md:static md:w-64 transition-transform duration-300 ease-in-out flex flex-col`}>
                 <div className="p-6 flex-1">
-                    <Link href="/" className="flex items-center space-x-2 mb-8">
-                        <div className="h-8 w-8 rounded-md bg-indigo-600 flex items-center justify-center">
-                            <span className="text-white font-bold">U</span>
-                        </div>
-                        <h2 className="text-xl font-bold text-gray-900">User Profile</h2>
-                    </Link>
+                    <div className="flex items-center justify-between mb-8">
+                        <Link href="/" className="flex items-center space-x-2">
+                            <div className="h-8 w-8 rounded-md bg-indigo-600 flex items-center justify-center">
+                                <span className="text-white font-bold">U</span>
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900">User Profile</h2>
+                        </Link>
+                        <button
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="md:hidden text-gray-600 hover:text-gray-900"
+                            aria-label="Close sidebar"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
 
                     <nav>
                         <div className="mb-2 text-xs font-semibold uppercase text-gray-500 tracking-wider pl-3">
@@ -500,7 +558,7 @@ export default function PanelPage() {
                                         )}
                                         <div className="mt-4 w-full max-w-xs">
                                             <div className="bg-indigo-50 p-4 rounded-lg text-center">
-                                                <p className="text-indigo-900 mt-1">Please note DP can&apos;t be changed as its linked to your google account.</p>
+                                                <p className="text-indigo-900 mt-1">Please note DP can't be changed as its linked to your google account.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -738,8 +796,8 @@ export default function PanelPage() {
                                     <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                         {getIconForSection(activeSection)}
                                     </div>
-                                    <p className="text-lg font-medium">No {activeSection} to display</p>
-                                    <p className="text-sm">All caught up! Check back later.</p>
+                                    <p className="text-lg font-medium">{getEmptyMessage(activeSection)}</p>
+                                    <p className="text-sm">Get started by exploring available options.</p>
                                 </div>
                             ) : (
                                 getDataForSection(activeSection).map((item) => {
