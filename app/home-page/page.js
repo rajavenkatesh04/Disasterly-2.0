@@ -1,27 +1,46 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import dynamic from "next/dynamic";
 import ActionButtons from "@/app/components/ActionButtons";
 import EmergencyContacts from "@/app/components/EmergencyContacts";
 
-// Dynamically import the Google Maps implementation with SSR disabled
-const SudoMap = dynamic(() => import("@/app/components/maps/SudoMap"), { ssr: false });
+// Dynamically import the Google Maps implementation with SSR disabled and preload
+const SudoMap = dynamic(() => import("@/app/components/maps/SudoMap"), {
+    ssr: false,
+    loading: () => <div className="h-full w-full bg-gray-200 animate-pulse rounded-lg" />,
+});
+
+// Utility: Debounce function to limit resize event frequency
+function debounce(fn, ms) {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn(...args), ms);
+    };
+}
 
 // Placeholder for auth hook (replace with your actual auth logic)
 const useAuth = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
     useEffect(() => {
         // Simulate auth check (replace with real auth logic)
-        setTimeout(() => setIsAuthenticated(true), 2000); // Example: 2s auth delay
+        setTimeout(() => {
+            setIsAuthenticated(true);
+            setIsLoading(false);
+        }, 1000); // Reduced delay for demo; adjust as needed
     }, []);
-    return isAuthenticated;
+
+    return { isAuthenticated, isLoading };
 };
 
 export default function HomePage() {
     const [mapHeight, setMapHeight] = useState("400px");
-    const isAuthenticated = useAuth(); // Check auth status
+    const { isAuthenticated, isLoading } = useAuth();
 
-    useEffect(() => {
+    // Calculate map height after DOM is painted
+    useLayoutEffect(() => {
         if (!isAuthenticated) return;
 
         const updateMapHeight = () => {
@@ -35,13 +54,35 @@ export default function HomePage() {
             }
         };
 
-        // Delay to ensure DOM elements are rendered
-        setTimeout(updateMapHeight, 100);
+        // Debounced resize handler
+        const debouncedUpdate = debounce(updateMapHeight, 100);
 
-        window.addEventListener("resize", updateMapHeight);
-        return () => window.removeEventListener("resize", updateMapHeight);
+        // Initial height calculation
+        updateMapHeight();
+
+        window.addEventListener("resize", debouncedUpdate);
+        return () => window.removeEventListener("resize", debouncedUpdate);
     }, [isAuthenticated]);
 
+    // Skeleton loader during authentication
+    if (isLoading) {
+        return (
+            <div className="container mx-auto px-4 py-6">
+                <section className="mb-6 mt-20">
+                    <div className="rounded-xl bg-gray-200 h-32 animate-pulse" />
+                </section>
+                <div className="block md:grid md:grid-cols-2 gap-6">
+                    <div className="h-[400px] w-full bg-gray-200 animate-pulse rounded-lg mb-6 md:mb-0" />
+                    <div id="rightColumn" className="space-y-6">
+                        <div className="h-24 bg-gray-200 animate-pulse rounded-lg" />
+                        <div className="h-64 bg-gray-200 animate-pulse rounded-lg" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Render nothing if not authenticated (optional, depends on your auth flow)
     if (!isAuthenticated) return null;
 
     return (
@@ -74,7 +115,10 @@ export default function HomePage() {
 
             {/* Tablet/Desktop Layout */}
             <div className="hidden md:grid md:grid-cols-2 gap-6">
-                <div style={{ height: mapHeight }} className="transition-all duration-300 rounded-lg overflow-hidden shadow-md">
+                <div
+                    style={{ height: mapHeight }}
+                    className="transition-all duration-300 rounded-lg overflow-hidden shadow-md"
+                >
                     <SudoMap />
                 </div>
                 <div id="rightColumn" className="space-y-6">
