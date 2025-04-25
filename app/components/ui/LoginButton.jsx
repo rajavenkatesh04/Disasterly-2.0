@@ -136,13 +136,7 @@ export default function LoginButton() {
                         Dashboard
                     </a>
                     <a
-                        href="/settings"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                        Settings
-                    </a>
-                    <a
-                        href="/panel"
+                        href="/user"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                         Profile

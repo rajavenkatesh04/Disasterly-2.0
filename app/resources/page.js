@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Plus, ShoppingCart, Trash2, ArrowRight, Home, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Resources() {
+    const { data: session } = useSession();
+    const isAdmin = session?.user?.role === 'admin';
+
     const [isClient, setIsClient] = useState(false);
     const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -14,6 +20,7 @@ export default function Resources() {
     const [showModal, setShowModal] = useState(false);
     const [showCartModal, setShowCartModal] = useState(false);
     const [cart, setCart] = useState([]);
+    const [animateCart, setAnimateCart] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -47,6 +54,10 @@ export default function Resources() {
     useEffect(() => {
         setIsClient(true);
 
+        // Load cart from localStorage
+        const storedCart = JSON.parse(localStorage.getItem('cart') || '[]');
+        setCart(storedCart);
+
         async function fetchResources() {
             try {
                 const response = await fetch('/api/resources');
@@ -71,6 +82,11 @@ export default function Resources() {
 
         fetchResources();
     }, []);
+
+    useEffect(() => {
+        // Save cart to localStorage
+        localStorage.setItem('cart', JSON.stringify(cart));
+    }, [cart]);
 
     const categories = [
         { id: 'all', name: 'All Supplies' },
@@ -163,6 +179,8 @@ export default function Resources() {
             }
             return [...prev, { ...resource, quantity: 1 }];
         });
+        setAnimateCart(true);
+        setTimeout(() => setAnimateCart(false), 1000); // Reset animation after 1s
     };
 
     const updateCartQuantity = (resourceId, newQuantity) => {
@@ -209,33 +227,53 @@ export default function Resources() {
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="container mx-auto px-4 py-8">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-red-600 mb-2">Disaster Preparedness Supplies</h1>
-                        <p className="text-gray-600">Essential items for floods, earthquakes, and other emergencies</p>
-                    </div>
-                    <div className="flex gap-4">
-                        <button
-                            onClick={() => setShowModal(true)}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                        >
-                            Add New Supply
-                        </button>
-                        <button
-                            onClick={() => setShowCartModal(true)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 relative"
-                        >
-                            Cart ({cart.reduce((total, item) => total + item.quantity, 0)})
-                        </button>
+                {/* Redesigned Header Section */}
+                <div className="bg-white shadow-sm rounded-lg p-4 mb-6">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center w-12 h-12 bg-red-50 rounded-full">
+                            <Link href="/" className="text-red-600">
+                                <Home size={24} />
+                            </Link>
+                        </div>
+                        <div className="flex-1">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-red-600">Disaster Preparedness Supplies</h1>
+                            <p className="text-gray-600 text-sm sm:text-base">Essential items for floods, earthquakes, and other emergencies</p>
+                        </div>
+                        <div className="flex gap-3">
+                            {isAdmin && (
+                                <button
+                                    onClick={() => setShowModal(true)}
+                                    className="flex items-center justify-center w-10 h-10 bg-red-600 text-white rounded-full shadow-md hover:bg-red-700 transition-colors"
+                                    aria-label="Add New Supply"
+                                >
+                                    <Plus size={20} />
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setShowCartModal(true)}
+                                className="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 transition-colors relative"
+                                aria-label="View Cart"
+                            >
+                                <motion.div
+                                    animate={animateCart ? { scale: [1, 1.2, 1], opacity: [1, 0.8, 1] } : {}}
+                                    transition={{ duration: 0.5 }}
+                                >
+                                    <ShoppingCart size={20} />
+                                </motion.div>
+                                <span className="absolute -top-1 -right-1 bg-yellow-500 text-xs text-white rounded-full w-5 h-5 flex items-center justify-center">
+                                    {cart.reduce((total, item) => total + item.quantity, 0)}
+                                </span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-4 mb-8">
+                <div className="flex flex-col sm:flex-row gap-4 mb-8">
                     <div className="relative flex-grow">
                         <input
                             type="text"
                             placeholder="Search supplies..."
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm sm:text-base"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -243,12 +281,11 @@ export default function Resources() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </div>
-
                     <div className="flex overflow-x-auto space-x-2 pb-2">
                         {categories.map(category => (
                             <button
                                 key={category.id}
-                                className={`px-4 py-2 whitespace-nowrap rounded-full text-sm font-medium ${
+                                className={`px-3 py-1 sm:px-4 sm:py-2 whitespace-nowrap rounded-full text-xs sm:text-sm font-medium ${
                                     filter === category.id
                                         ? 'bg-red-600 text-white'
                                         : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
@@ -267,9 +304,7 @@ export default function Resources() {
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-bold">Add New Supply</h2>
                                 <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    <X size={24} />
                                 </button>
                             </div>
                             {formError && (
@@ -286,7 +321,7 @@ export default function Resources() {
                                         value={formData.name}
                                         onChange={handleFormChange}
                                         required
-                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                     />
                                 </div>
                                 <div className="mb-4">
@@ -296,7 +331,7 @@ export default function Resources() {
                                         value={formData.description}
                                         onChange={handleFormChange}
                                         required
-                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                         rows="4"
                                     ></textarea>
                                 </div>
@@ -306,7 +341,7 @@ export default function Resources() {
                                         name="category"
                                         value={formData.category}
                                         onChange={handleFormChange}
-                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                     >
                                         {categoryOptions.map(option => (
                                             <option key={option} value={option}>{option.charAt(0).toUpperCase() + option.slice(1)}</option>
@@ -323,7 +358,7 @@ export default function Resources() {
                                         required
                                         min="0"
                                         step="0.01"
-                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                     />
                                 </div>
                                 <div className="mb-4">
@@ -335,7 +370,7 @@ export default function Resources() {
                                         onChange={handleFormChange}
                                         required
                                         min="0"
-                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                     />
                                 </div>
                                 <div className="mb-4">
@@ -345,7 +380,7 @@ export default function Resources() {
                                         name="imageUrl"
                                         value={formData.imageUrl}
                                         onChange={handleFormChange}
-                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                     />
                                 </div>
                                 <div className="mb-4">
@@ -357,7 +392,7 @@ export default function Resources() {
                                         onChange={handleFormChange}
                                         min="1"
                                         max="5"
-                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                     />
                                 </div>
                                 <div className="mb-4">
@@ -367,7 +402,7 @@ export default function Resources() {
                                         name="tags"
                                         value={formData.tags}
                                         onChange={handleFormChange}
-                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                     />
                                 </div>
                                 <div className="mb-4">
@@ -377,20 +412,20 @@ export default function Resources() {
                                         name="expiryDate"
                                         value={formData.expiryDate}
                                         onChange={handleFormChange}
-                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                     />
                                 </div>
                                 <div className="flex justify-end gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setShowModal(false)}
-                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
                                     >
                                         Add Supply
                                     </button>
@@ -406,49 +441,83 @@ export default function Resources() {
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-bold">Your Cart</h2>
                                 <button onClick={() => setShowCartModal(false)} className="text-gray-500 hover:text-gray-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    <X size={24} />
                                 </button>
                             </div>
                             {cart.length === 0 ? (
-                                <p className="text-gray-600">Your cart is empty.</p>
+                                <p className="text-gray-600 text-center">Your cart is empty.</p>
                             ) : (
                                 <>
-                                    {cart.map(item => (
-                                        <div key={item._id} className="flex justify-between items-center mb-4 border-b pb-2">
-                                            <div>
-                                                <h3 className="font-bold">{item.name}</h3>
-                                                <p className="text-gray-600 text-sm">₹{item.price.toFixed(2)} x {item.quantity}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max={item.inStock}
-                                                    value={item.quantity}
-                                                    onChange={(e) => updateCartQuantity(item._id, parseInt(e.target.value))}
-                                                    className="w-16 px-2 py-1 border rounded-lg"
-                                                />
-                                                <button
-                                                    onClick={() => removeFromCart(item._id)}
-                                                    className="text-red-600 hover:text-red-800"
-                                                >
-                                                    Remove
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                    <AnimatePresence>
+                                        {cart.map(item => (
+                                            <motion.div
+                                                key={item._id}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -20 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="flex justify-between items-center mb-4 border-b pb-4"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 relative">
+                                                        {item.imageUrl ? (
+                                                            isImageDomainAllowed(item.imageUrl) ? (
+                                                                <Image
+                                                                    src={item.imageUrl}
+                                                                    alt={item.name}
+                                                                    fill
+                                                                    className="object-cover rounded"
+                                                                />
+                                                            ) : (
+                                                                <img
+                                                                    src={item.imageUrl}
+                                                                    alt={item.name}
+                                                                    className="w-full h-full object-cover rounded"
+                                                                />
+                                                            )
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-sm sm:text-base">{item.name}</h3>
+                                                        <p className="text-gray-600 text-xs sm:text-sm">₹{item.price.toFixed(2)} x {item.quantity}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max={item.inStock}
+                                                        value={item.quantity}
+                                                        onChange={(e) => updateCartQuantity(item._id, parseInt(e.target.value))}
+                                                        className="w-16 px-2 py-1 border rounded-lg text-sm"
+                                                    />
+                                                    <button
+                                                        onClick={() => removeFromCart(item._id)}
+                                                        className="text-red-600 hover:text-red-800"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
                                     <div className="flex justify-between items-center mt-4">
-                    <span className="font-bold">
-                      Total: ₹{cart.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}
-                    </span>
+                                      <span className="font-bold text-sm sm:text-base">
+                                        Total: ₹{cart.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}
+                                      </span>
                                         <Link
                                             href="/checkout"
-                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm sm:text-base"
                                             onClick={() => setShowCartModal(false)}
                                         >
                                             Proceed to Checkout
+                                            <ArrowRight size={16} />
                                         </Link>
                                     </div>
                                 </>
@@ -473,7 +542,7 @@ export default function Resources() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                         {filteredResources.map(resource => (
                             <div key={resource._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                                <div className="relative h-48 bg-gray-200">
+                                <div className="relative h-32 sm:h-48 bg-gray-200">
                                     {resource.imageUrl ? (
                                         <div className="relative h-full w-full">
                                             {isImageDomainAllowed(resource.imageUrl) ? (
@@ -481,7 +550,7 @@ export default function Resources() {
                                                     src={resource.imageUrl}
                                                     alt={resource.name || 'Supply image'}
                                                     fill
-                                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                                                     className="object-cover"
                                                 />
                                             ) : (
@@ -494,42 +563,43 @@ export default function Resources() {
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-center h-full bg-gray-200">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 sm:h-12 w-8 sm:w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
                                         </div>
                                     )}
                                     {resource.inStock <= 5 && resource.inStock > 0 && (
                                         <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
-                      Only {resource.inStock} left
-                    </span>
+                                          Only {resource.inStock} left
+                                        </span>
                                     )}
                                     {resource.inStock === 0 && (
                                         <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                      Out of Stock
-                    </span>
+                                          Out of Stock
+                                        </span>
                                     )}
                                     {resource.priority === 1 && (
                                         <span className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
-                      Critical
-                    </span>
+                                          Critical
+                                        </span>
                                     )}
                                 </div>
                                 <div className="p-4">
                                     <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">{resource.category}</span>
-                                    <h3 className="font-bold text-gray-900 mt-1">{resource.name}</h3>
-                                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">{resource.description}</p>
-                                    <div className="flex justify-between items-center mt-4">
-                                        <span className="font-bold text-gray-900">₹{resource.price?.toFixed(2) || '0.00'}</span>
+                                    <h3 className="font-bold text-sm sm:text-base text-gray-900 mt-1">{resource.name}</h3>
+                                    <p className="text-gray-600 text-xs sm:text-sm mt-1 line-clamp-2">{resource.description}</p>
+                                    <div className="mt-4 flex flex-col gap-2">
+                                        <span className="font-bold text-sm sm:text-base text-gray-900">₹{resource.price?.toFixed(2) || '0.00'}</span>
                                         <button
                                             onClick={() => addToCart(resource)}
-                                            className={`px-3 py-1 rounded text-sm font-medium ${
+                                            className={`w-full px-3 py-1 rounded text-xs sm:text-sm font-medium flex items-center justify-center gap-2 ${
                                                 resource.inStock > 0
                                                     ? 'bg-red-600 text-white hover:bg-red-700'
                                                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                             }`}
                                             disabled={resource.inStock === 0}
                                         >
+                                            <ShoppingCart size={14} />
                                             Add to Cart
                                         </button>
                                     </div>
