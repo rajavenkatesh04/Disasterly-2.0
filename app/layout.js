@@ -4,6 +4,7 @@ import { Providers } from "./providers";
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import Navbar from "@/app/components/Navbar";
+import GoogleTranslate from "@/app/components/GoogleTranslate";
 
 export const metadata = {
     title: "Disasterly",
@@ -23,9 +24,10 @@ const geistMono = Geist_Mono({
 export default function RootLayout({ children }) {
     return (
         <html lang="en">
-        <body>
+        <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Providers>
             {/*<Navbar />*/}
+            <GoogleTranslate />
             {children}
             <Analytics />
             <SpeedInsights />
