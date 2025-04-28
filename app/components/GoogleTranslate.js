@@ -32,5 +32,5 @@ export default function GoogleTranslate() {
         };
     }, []);
 
-    return <div id="google_translate_element" className="fixed top-4 right-4 z-50 bg-white/80 rounded shadow p-2" />;
+    return <div id="google_translate_element" className="fixed top-4 right-4 z-50 bg-white/80 rounded shadow p-2 mt-15" />;
 }
